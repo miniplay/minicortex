@@ -1,8 +1,5 @@
 package com.miniplay.minicortex.server;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.ThreadMXBean;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +59,7 @@ public class CortexServer {
                 System.out.println("\t > Queue Observer --");
             }
         };
-        executorThreadPoolServiceStatus.scheduleAtFixedRate(queueRunnable, 10L, 15L, TimeUnit.SECONDS);
+        executorThreadPoolServiceStatus.scheduleAtFixedRate(queueRunnable, 5L, 30L, TimeUnit.SECONDS);
 
         Runnable dockerMangerRunnable = new Runnable() {
             public void run() {
@@ -70,7 +67,7 @@ public class CortexServer {
                 System.out.println("\t > Docker Manager Observer --");
             }
         };
-        executorThreadPoolServiceStatus.scheduleAtFixedRate(dockerMangerRunnable, 5L, 5L, TimeUnit.SECONDS);
+        executorThreadPoolServiceStatus.scheduleAtFixedRate(dockerMangerRunnable, 1L, 5L, TimeUnit.MINUTES);
 
 
     }
