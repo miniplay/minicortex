@@ -1,15 +1,19 @@
 package com.miniplay.minicortex.server;
 
 import com.miniplay.common.GlobalFunctions;
+import com.miniplay.custom.observers.ContainerObserver;
+import com.miniplay.custom.observers.QueueObserver;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.modules.docker.DockerManager;
 
+import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
+ *
  * Created by ret on 4/12/15.
  */
 public class CortexServer {
@@ -25,6 +29,10 @@ public class CortexServer {
     // Modules
     private ElasticBalancer elasticBalancer = null;
 
+    // Observers
+    private ContainerObserver containerObserver = null;
+    private QueueObserver queueObserver = null;
+
 
     /**
      * CortexServer constructor
@@ -35,19 +43,23 @@ public class CortexServer {
         this.showConsoleOutput = config.isShowServerConsoleOutput();
         this.showServerExceptions = config.isShowExceptions();
 
-        // Instanciate modules
+        // Instantiate modules
         this.elasticBalancer = new ElasticBalancer(this, config);
 
-        // @TODO: Initialize event loop
-
+        // Register observers
+        this.containerObserver = new ContainerObserver();
+        this.queueObserver = new QueueObserver();
 
     }
 
     /**
      * Let's run the CortexServer
      */
-    public void run() {
-        // @TODO: Check balancer config is OK
+    public void run() throws Exception {
+        // Check balancer config is OK
+        if(!this.elasticBalancer.isLoaded) {
+            throw new Exception("Elastic Balancer not loaded!");
+        }
 
         // All OK, Run executors!
         GlobalFunctions.getInstance().printOutput(" Server started!");
@@ -68,29 +80,35 @@ public class CortexServer {
                     // @TODO: log usage into statsd if available
                     // @TODO: Print output if enabled in config
 
-                    GlobalFunctions.getInstance().printOutput("0 Running containers & 0 Pending Jobs");
+                    GlobalFunctions.getInstance().printOutput("Containers: 0 Registered, 0 Running, 0 Stopped");
+                    GlobalFunctions.getInstance().printOutput("Queue: 0 Pending, 0 Running");
                 } catch (Exception e) {
                     // @TODO: Display error message
                 }
             }
         };
-        statusThreadPool.scheduleAtFixedRate(statusRunnable, 2L, 2L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(statusRunnable, 2L, 3L, TimeUnit.SECONDS);
+
+        Runnable containerStatusRunnable = new Runnable() {
+            public void run() {
+                elasticBalancer.getDockerManager().loadContainers();
+            }
+        };
+        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 1L, 2L, TimeUnit.SECONDS);
 
         Runnable queueRunnable = new Runnable() {
             public void run() {
-                // @TODO: implement observer to run...
-                System.out.println("\t > Queue Observer --");
+                queueObserver.run();
             }
         };
-        observersThreadPool.scheduleAtFixedRate(queueRunnable, 5L, 30L, TimeUnit.SECONDS);
+        observersThreadPool.scheduleAtFixedRate(queueRunnable, 5L, 5L, TimeUnit.SECONDS);
 
-        Runnable dockerMangerRunnable = new Runnable() {
+        Runnable containerRunnable = new Runnable() {
             public void run() {
-                // @TODO: implement observer to run...
-                System.out.println("\t > Docker Manager Observer --");
+                containerObserver.run();
             }
         };
-        observersThreadPool.scheduleAtFixedRate(dockerMangerRunnable, 1L, 5L, TimeUnit.MINUTES);
+        observersThreadPool.scheduleAtFixedRate(containerRunnable, 1L, 15L, TimeUnit.SECONDS);
 
 
     }

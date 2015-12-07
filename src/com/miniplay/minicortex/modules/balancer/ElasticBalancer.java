@@ -44,9 +44,10 @@ public class ElasticBalancer {
         this.dockerManager = new DockerManager(this, dockerConfig, amazonEC2Config);
 
         // All OK!
-        GlobalFunctions.getInstance().printOutput("Elastic Balancer Loaded OK!");
         this.isLoaded = true;
+        GlobalFunctions.getInstance().printOutput("Elastic Balancer Loaded OK!");
 
+        this.dockerManager.loadContainers();
     }
 
     private void loadConfig() {
@@ -63,4 +64,7 @@ public class ElasticBalancer {
         }
     }
 
+    public DockerManager getDockerManager() {
+        return dockerManager;
+    }
 }

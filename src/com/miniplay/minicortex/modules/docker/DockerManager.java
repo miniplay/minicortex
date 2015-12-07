@@ -1,6 +1,12 @@
 package com.miniplay.minicortex.modules.docker;
 
+import com.miniplay.common.GlobalFunctions;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
+import com.sun.corba.se.impl.resolver.SplitLocalResolverImpl;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Map;
 
 /**
@@ -53,6 +59,31 @@ public class DockerManager {
     }
 
     private void loadConfig() {
+
+    }
+
+    public void loadContainers() {
+        try {
+//            String output = GlobalFunctions.getInstance().executeCommand("docker-machine ls");
+//            String[] SplittedString = output.split("\n");
+//            for (String line: SplittedString) {
+//                if(!line.contains("DRIVER")) {
+//                    StringBuilder newLine = new StringBuilder(line);
+//                    for (int i = 0; i < line.length(); i++){
+//                        char c = line.charAt(i);
+//                        //System.out.println("Analyzing char: ["+c+"]");
+//                        if(c == ' ' && line.charAt(i+1) != ' ') {
+//                            //System.out.println("Replacing with | char: "+(i+1));
+//                            newLine.setCharAt(i+1,'|');
+//                        }
+//                    }
+//                    System.out.println(newLine);
+//                }
+//            }
+        } catch (Exception e) {
+            System.out.println(GlobalFunctions.PREPEND_DOCKER_OUTPUT + e.getMessage());
+        }
+
 
     }
 }
