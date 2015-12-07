@@ -1,5 +1,10 @@
 package com.miniplay.minicortex.server;
 
+import com.miniplay.common.GlobalFunctions;
+import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
+import com.miniplay.minicortex.modules.docker.DockerManager;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -9,17 +14,32 @@ import java.util.concurrent.TimeUnit;
  */
 public class CortexServer {
 
+    // Cortex config
+    protected Boolean showConsoleOutput = true;
+    protected Boolean showServerExceptions = true;
 
-    public ScheduledExecutorService executorThreadPoolServiceStatus = Executors.newScheduledThreadPool(2);
+    // Executors
+    public ScheduledExecutorService statusThreadPool = Executors.newScheduledThreadPool(2);
+    public ScheduledExecutorService observersThreadPool = Executors.newScheduledThreadPool(2);
+
+    // Modules
+    private ElasticBalancer elasticBalancer = null;
+
 
     /**
      * CortexServer constructor
      */
-    public CortexServer() {
+    public CortexServer(Config config) {
 
-        // @TODO: Load Elastic Balancer config
+        // Load app config
+        this.showConsoleOutput = config.isShowServerConsoleOutput();
+        this.showServerExceptions = config.isShowExceptions();
+
+        // Instanciate modules
+        this.elasticBalancer = new ElasticBalancer(this, config);
 
         // @TODO: Initialize event loop
+
 
     }
 
@@ -29,7 +49,9 @@ public class CortexServer {
     public void run() {
         // @TODO: Check balancer config is OK
 
-        // Run executors!
+        // All OK, Run executors!
+        GlobalFunctions.getInstance().printOutput(" Server started!");
+        System.out.println("\n");
         this.runObserverRunnables();
     }
 
@@ -45,13 +67,14 @@ public class CortexServer {
                     // @TODO: Get server usage
                     // @TODO: log usage into statsd if available
                     // @TODO: Print output if enabled in config
-                    System.out.println("> CortexServer: 0 Containers | 0 Pending Jobs");
+
+                    GlobalFunctions.getInstance().printOutput("0 Running containers & 0 Pending Jobs");
                 } catch (Exception e) {
                     // @TODO: Display error message
                 }
             }
         };
-        executorThreadPoolServiceStatus.scheduleAtFixedRate(statusRunnable, 2L, 2L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(statusRunnable, 2L, 2L, TimeUnit.SECONDS);
 
         Runnable queueRunnable = new Runnable() {
             public void run() {
@@ -59,7 +82,7 @@ public class CortexServer {
                 System.out.println("\t > Queue Observer --");
             }
         };
-        executorThreadPoolServiceStatus.scheduleAtFixedRate(queueRunnable, 5L, 30L, TimeUnit.SECONDS);
+        observersThreadPool.scheduleAtFixedRate(queueRunnable, 5L, 30L, TimeUnit.SECONDS);
 
         Runnable dockerMangerRunnable = new Runnable() {
             public void run() {
@@ -67,7 +90,7 @@ public class CortexServer {
                 System.out.println("\t > Docker Manager Observer --");
             }
         };
-        executorThreadPoolServiceStatus.scheduleAtFixedRate(dockerMangerRunnable, 1L, 5L, TimeUnit.MINUTES);
+        observersThreadPool.scheduleAtFixedRate(dockerMangerRunnable, 1L, 5L, TimeUnit.MINUTES);
 
 
     }
