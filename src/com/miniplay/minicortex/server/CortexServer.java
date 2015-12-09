@@ -1,11 +1,10 @@
 package com.miniplay.minicortex.server;
 
-import com.miniplay.common.GlobalFunctions;
+import com.miniplay.common.Utils;
 import com.miniplay.custom.observers.ContainerObserver;
 import com.miniplay.custom.observers.QueueObserver;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
-import com.miniplay.minicortex.modules.docker.Container;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -64,7 +63,7 @@ public class CortexServer {
         }
 
         // All OK, Run executors!
-        GlobalFunctions.getInstance().printOutput(" Server started!");
+        Utils.getInstance().printOutput(" Server started!");
         System.out.println("\n");
         this.runObserverRunnables();
     }
@@ -78,16 +77,16 @@ public class CortexServer {
             public void run() {
                 try {
 
-                    // @TODO: Get server usage
-                    // @TODO: log usage into statsd if available
-                    // @TODO: Print output if enabled in config
-
-                    Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
                     Integer allContainers = elasticBalancer.getContainerManager().getAllContainers().size();
                     Integer stoppedContainers = elasticBalancer.getContainerManager().getStoppedContainers().size();
+                    Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
 
-                    GlobalFunctions.getInstance().printOutput("Containers: "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
-                    GlobalFunctions.getInstance().printOutput("Queue: 0 Pending, 0 Running");
+                    if(showConsoleOutput) {
+                        Utils.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
+                    }
+
+                    // TODO: log usage into STATSD if available
+
                 } catch (Exception e) {
                     // @TODO: Display error message
                 }
@@ -98,19 +97,9 @@ public class CortexServer {
         Runnable containerStatusRunnable = new Runnable() {
             public void run() {
                 elasticBalancer.getContainerManager().loadContainers();
-                //System.out.println(elasticBalancer.getContainerManager().containers);
             }
         };
-        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 4L, 10L, TimeUnit.SECONDS);
-
-        Runnable testRunnable = new Runnable() {
-            public void run() {
-                Container testContainer = elasticBalancer.getContainerManager().getContainerByName("rafa-test5");
-                System.out.println("Starting container...");
-                testContainer.start();
-            }
-        };
-        statusThreadPool.scheduleAtFixedRate(testRunnable, 15L, 1000L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 5L, 5L, TimeUnit.SECONDS);
 
         Runnable queueRunnable = new Runnable() {
             public void run() {

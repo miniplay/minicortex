@@ -1,6 +1,6 @@
 package com.miniplay.minicortex.modules.docker;
 
-import com.miniplay.common.GlobalFunctions;
+import com.miniplay.common.CommandExecutor;
 
 /**
  *
@@ -74,7 +74,7 @@ public class Container {
      * @param action String
      */
     private void changeState(String action) {
-        String commandOutput = GlobalFunctions.getInstance().executeCommand("docker-machine " + action  + " " + this.getName());
+        String commandOutput = CommandExecutor.getInstance().execute("docker-machine " + action  + " " + this.getName());
         System.out.println(commandOutput);
     }
 

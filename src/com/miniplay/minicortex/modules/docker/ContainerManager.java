@@ -1,6 +1,7 @@
 package com.miniplay.minicortex.modules.docker;
 
-import com.miniplay.common.GlobalFunctions;
+import com.miniplay.common.CommandExecutor;
+import com.miniplay.common.Utils;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.server.CortexServer;
 
@@ -17,6 +18,7 @@ public class ContainerManager {
     protected ElasticBalancer elasticBalancer = null;
     protected Map<String, Object> dockerConfig = null;
     protected Map<String, Object> amazonEC2Config = null;
+    public Boolean isLoaded = false;
 
     /* Application registered containers */
     public volatile ConcurrentHashMap<String, Container> containers = new ConcurrentHashMap<String, Container>();
@@ -56,13 +58,18 @@ public class ContainerManager {
         // Load docker & EC2 config
         this.dockerConfig = dockerConfig;
         this.amazonEC2Config = amazonEC2Config;
+
+        this.loadConfig();
+
+
+        System.out.println(Utils.PREPEND_OUTPUT + "ContainerManager Loaded OK");
     }
 
     /**
      * TODO: Load config from file
      */
     private void loadConfig() {
-
+        this.isLoaded = true;
     }
 
     /**
@@ -78,9 +85,9 @@ public class ContainerManager {
      * Load containers from "docker-machine ls" into application
      */
     public void loadContainers() {
-        if(CortexServer.DEBUG) System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + "Starting containers load...");
+        if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Starting containers load...");
         try {
-            String output = GlobalFunctions.getInstance().executeCommand("docker-machine ls");
+            String output = CommandExecutor.getInstance().execute("docker-machine ls");
             ArrayList<String> containersToAdd = new ArrayList<String>();
             String[] SplittedString = output.split("\n");
             for (String line: SplittedString) {
@@ -98,7 +105,7 @@ public class ContainerManager {
             this.registerContainersFromProcessString(containersToAdd);
 
         } catch (Exception e) {
-            System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
+            System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -110,11 +117,11 @@ public class ContainerManager {
      * @param containersToAdd ArrayList
      */
     private void registerContainersFromProcessString(ArrayList<String> containersToAdd) {
-        if(CortexServer.DEBUG) System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + "Registering loaded containers");
+        if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Registering loaded containers");
         for(String processString:containersToAdd) {
             try {
                 String[] splittedProcessString = processString.split("\\|");
-                if(CortexServer.DEBUG) System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]");
+                if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]");
 
                 if(splittedProcessString[3].equals("Timeout")) {
                     throw new Exception("Container state was timeout, skipping");
@@ -127,9 +134,9 @@ public class ContainerManager {
 
                 Boolean registerResponse = this.registerContainer(containerName, containerDriver, containerState, containerUrl);
                 if(registerResponse) {
-                    if(CortexServer.DEBUG) System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]");
+                    if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]");
                 } else {
-                    System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
+                    System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
                 }
             } catch (Exception e) {
                 System.out.println("Exception registering container [" + processString + "] message: " + e.getMessage());
@@ -152,7 +159,7 @@ public class ContainerManager {
             }
             return true;
         } catch (Exception e) {
-            System.out.println(GlobalFunctions.PREPEND_OUTPUT_DOCKER + e.getMessage());
+            System.out.println(Utils.PREPEND_OUTPUT_DOCKER + e.getMessage());
             return false;
         }
     }
@@ -162,7 +169,7 @@ public class ContainerManager {
      * @param containerName String
      */
     public void provisionContainer(String containerName) {
-        String creationOutput = GlobalFunctions.getInstance().executeCommand(
+        String creationOutput = CommandExecutor.getInstance().execute(
             "docker-machine create \\" +
             "--driver amazonec2 \\" +
             "--amazonec2-region '"+this.AMAZONEC2_REGION+"' \\" +
@@ -204,6 +211,22 @@ public class ContainerManager {
      */
     public ArrayList<Container> getRunningContainers() {
         return this.getContainers(Container.STATUS_RUNNING);
+    }
+
+    /**
+     * Get stopping containers
+     * @return ArrayList
+     */
+    public ArrayList<Container> getStoppingContainers() {
+        return this.getContainers(Container.STATUS_STOPPING);
+    }
+
+    /**
+     * Get starting containers
+     * @return ArrayList
+     */
+    public ArrayList<Container> getStartingContainers() {
+        return this.getContainers(Container.STATUS_STARTING);
     }
 
     /**

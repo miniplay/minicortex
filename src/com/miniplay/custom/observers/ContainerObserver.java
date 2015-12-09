@@ -1,6 +1,6 @@
 package com.miniplay.custom.observers;
 
-import com.miniplay.common.GlobalFunctions;
+import com.miniplay.common.Utils;
 
 /**
  *
@@ -13,6 +13,6 @@ public class ContainerObserver {
     }
 
     public void run() {
-        System.out.println(GlobalFunctions.PREPEND_OUTPUT_OBSERVERS + "Contanier observer running...");
+        System.out.println(Utils.PREPEND_OUTPUT_OBSERVERS + "Contanier observer running...");
     }
 }

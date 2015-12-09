@@ -1,6 +1,6 @@
 package com.miniplay.minicortex;
 
-import com.miniplay.common.GlobalFunctions;
+import com.miniplay.common.Utils;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.EnvironmentManager;
 import com.miniplay.minicortex.server.CortexServer;
@@ -21,7 +21,7 @@ public class RunServer {
             try {
                 env = new EnvironmentManager(args[0]);
             } catch (Exception e) {
-                GlobalFunctions.getInstance().printOutput("Invalid environment: "+ args[2] + " using default [dev] ....");
+                Utils.getInstance().printOutput("Invalid environment: "+ args[2] + " using default [dev] ....");
                 env = new EnvironmentManager("dev");
                 printCLISyntax();
             }
@@ -40,7 +40,7 @@ public class RunServer {
             CortexServer cortexServer = new CortexServer(serviceConfig);
             cortexServer.run();
         }catch(Exception e) {
-            GlobalFunctions.getInstance().printOutput("ERROR starting "+e.getMessage());
+            Utils.getInstance().printOutput("ERROR starting "+e.getMessage());
             printCLISyntax();
         }
 
