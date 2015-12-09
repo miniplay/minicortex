@@ -92,6 +92,7 @@ public class CortexServer {
         Runnable containerStatusRunnable = new Runnable() {
             public void run() {
                 elasticBalancer.getDockerManager().loadContainers();
+                System.out.println(elasticBalancer.getDockerManager().containers);
             }
         };
         statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 1L, 2L, TimeUnit.SECONDS);

@@ -12,7 +12,7 @@ public class GlobalFunctions {
     private static GlobalFunctions instance = null;
 
     public static final String PREPEND_OUTPUT = "> CortexServer: ";
-    public static final String PREPEND_DOCKER_OUTPUT = "> Docker: ";
+    public static final String PREPEND_DOCKER_OUTPUT = "> DockerManager: ";
 
     /**
      * GlobalFunctions instance (Singleton)
