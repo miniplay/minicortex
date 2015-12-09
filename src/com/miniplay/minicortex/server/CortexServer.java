@@ -5,9 +5,8 @@ import com.miniplay.custom.observers.ContainerObserver;
 import com.miniplay.custom.observers.QueueObserver;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
-import com.miniplay.minicortex.modules.docker.DockerManager;
+import com.miniplay.minicortex.modules.docker.Container;
 
-import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +16,9 @@ import java.util.concurrent.TimeUnit;
  * Created by ret on 4/12/15.
  */
 public class CortexServer {
+
+    // Constants
+    public static final Boolean DEBUG = true;
 
     // Cortex config
     protected Boolean showConsoleOutput = true;
@@ -80,22 +82,35 @@ public class CortexServer {
                     // @TODO: log usage into statsd if available
                     // @TODO: Print output if enabled in config
 
-                    GlobalFunctions.getInstance().printOutput("Containers: 0 Registered, 0 Running, 0 Stopped");
+                    Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
+                    Integer allContainers = elasticBalancer.getContainerManager().getAllContainers().size();
+                    Integer stoppedContainers = elasticBalancer.getContainerManager().getStoppedContainers().size();
+
+                    GlobalFunctions.getInstance().printOutput("Containers: "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
                     GlobalFunctions.getInstance().printOutput("Queue: 0 Pending, 0 Running");
                 } catch (Exception e) {
                     // @TODO: Display error message
                 }
             }
         };
-        statusThreadPool.scheduleAtFixedRate(statusRunnable, 2L, 3L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(statusRunnable, 5L, 5L, TimeUnit.SECONDS);
 
         Runnable containerStatusRunnable = new Runnable() {
             public void run() {
-                elasticBalancer.getDockerManager().loadContainers();
-                System.out.println(elasticBalancer.getDockerManager().containers);
+                elasticBalancer.getContainerManager().loadContainers();
+                //System.out.println(elasticBalancer.getContainerManager().containers);
             }
         };
-        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 1L, 2L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 4L, 10L, TimeUnit.SECONDS);
+
+        Runnable testRunnable = new Runnable() {
+            public void run() {
+                Container testContainer = elasticBalancer.getContainerManager().getContainerByName("rafa-test5");
+                System.out.println("Starting container...");
+                testContainer.start();
+            }
+        };
+        statusThreadPool.scheduleAtFixedRate(testRunnable, 15L, 1000L, TimeUnit.SECONDS);
 
         Runnable queueRunnable = new Runnable() {
             public void run() {

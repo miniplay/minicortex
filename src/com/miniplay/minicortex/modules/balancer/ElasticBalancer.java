@@ -2,9 +2,8 @@ package com.miniplay.minicortex.modules.balancer;
 
 import com.miniplay.common.GlobalFunctions;
 import com.miniplay.minicortex.config.Config;
-import com.miniplay.minicortex.modules.docker.DockerManager;
+import com.miniplay.minicortex.modules.docker.ContainerManager;
 import com.miniplay.minicortex.server.CortexServer;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.security.InvalidParameterException;
 import java.util.Map;
@@ -23,7 +22,7 @@ public class ElasticBalancer {
     public Integer EB_MAX_PROVISION_CONTAINERS = 0;
 
     private CortexServer cortexServer = null;
-    private DockerManager dockerManager = null;
+    private ContainerManager containerManager = null;
     public Boolean isLoaded = false;
 
     /**
@@ -41,13 +40,13 @@ public class ElasticBalancer {
         this.cortexServer = cortexServer;
 
         // Load Docker config
-        this.dockerManager = new DockerManager(this, dockerConfig, amazonEC2Config);
+        this.containerManager = new ContainerManager(this, dockerConfig, amazonEC2Config);
 
         // All OK!
         this.isLoaded = true;
         GlobalFunctions.getInstance().printOutput("Elastic Balancer Loaded OK!");
 
-        this.dockerManager.loadContainers();
+        this.containerManager.loadContainers();
     }
 
     private void loadConfig() {
@@ -64,7 +63,7 @@ public class ElasticBalancer {
         }
     }
 
-    public DockerManager getDockerManager() {
-        return dockerManager;
+    public ContainerManager getContainerManager() {
+        return containerManager;
     }
 }
