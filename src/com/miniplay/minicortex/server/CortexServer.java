@@ -67,7 +67,7 @@ public class CortexServer {
         // All OK, Run executors!
         Utils.getInstance().printOutput(" Server started!");
         System.out.println("\n");
-        this.runObserverRunnables();
+        //this.runObserverRunnables();
     }
 
     /**

@@ -1,10 +1,18 @@
 package com.miniplay.minicortex.config;
 
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import org.yaml.snakeyaml.Yaml;
+import com.miniplay.config.ConfigBeacon;
+
 
 public class Config {
 
@@ -16,7 +24,11 @@ public class Config {
     private boolean showExceptions = true;
     private String version = "0.0.1";
     public String CUSTOM_OBSERVERS_PACKAGE_NAME = "com.miniplay.custom.observers";
+    public static String CUSTOM_CONFIG_FILE_NAME = "config.yml";
 
+    /**
+     * CUSTOM CONFIG
+     */
 
     /* DOCKER */
     public static String DOCKER_DEFAULT_DRIVER = "amazonec2";
@@ -27,16 +39,16 @@ public class Config {
     public static Boolean DOCKER_TERMINATE_MODE = false;
 
     /* AMAZON EC2 DOCKER DRIVER */
-    public static String AMAZONEC2_REGION = "eu-west-1";
-    public static String AMAZONEC2_ACCESS_KEY = "AKIAIXSAJTUDBSFPZLNA";
-    public static String AMAZONEC2_SECRET_KEY = "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";
-    public static String AMAZONEC2_VPC_ID = "vpc-addacac5";
-    public static String AMAZONEC2_ZONE = "a";
-    public static String AMAZONEC2_SSH_USER = "centos";
-    public static String AMAZONEC2_INSTANCE_TYPE = "c3.large";
-    public static String AMAZONEC2_AMI = "ami-f312b580";
-    public static String AMAZONEC2_SUBNET_ID = "subnet-aedacac6";
-    public static String AMAZONEC2_SECURITY_GROUP = "default";
+    public static String AMAZONEC2_REGION = "";
+    public static String AMAZONEC2_ACCESS_KEY = "";
+    public static String AMAZONEC2_SECRET_KEY = "";
+    public static String AMAZONEC2_VPC_ID = "";
+    public static String AMAZONEC2_ZONE = "";
+    public static String AMAZONEC2_SSH_USER = "";
+    public static String AMAZONEC2_INSTANCE_TYPE = "";
+    public static String AMAZONEC2_AMI = "";
+    public static String AMAZONEC2_SUBNET_ID = "";
+    public static String AMAZONEC2_SECURITY_GROUP = "";
     public static Boolean AMAZONEC2_USE_PRIVATE_ADDRESS = true;
     public static Boolean AMAZONEC2_PRIVATE_ADDRESS_ONYL = true;
 
@@ -54,6 +66,7 @@ public class Config {
 
     public Config(EnvironmentManager environment) {
         this.environment = environment;
+        initConfig();
     }
 
     public Config() {
@@ -62,7 +75,36 @@ public class Config {
         }catch (InterruptedException e) {
             e.printStackTrace();
         }
+        initConfig();
+    }
 
+    public void initConfig() {
+        // The path of your YAML file.
+        ArrayList<String> key = new ArrayList<String>();
+        ArrayList<String> value = new ArrayList<String>();
+        Yaml yaml = new Yaml();
+        ConfigBeacon configBeacon = new ConfigBeacon();
+        File configFile = configBeacon.getConfigFile();
+
+        try {
+            InputStream ios = new FileInputStream(configFile);
+            // Parse the YAML file and return the output as a series of Maps and Lists
+            Map< String, Object> result = (Map< String, Object>) yaml.load(ios);
+            for (Object name : result.keySet()) {
+                key.add(name.toString());
+                if (result.get(name) == null){
+                    value.add(null);
+                } else {
+                    value.add(result.get(name).toString());
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(key);
+        System.out.println(value);
     }
 
     public void startServerConsoleOutput() {

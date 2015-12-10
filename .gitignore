@@ -13,3 +13,4 @@ hs_err_pid*
 
 #IDE EXCLUDES
 .idea
+src/com/miniplay/config/config.yml
