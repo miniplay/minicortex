@@ -15,6 +15,7 @@ public class Config {
     private boolean showServerConsoleOutput = true;
     private boolean showExceptions = true;
     private String version = "0.0.1";
+    public String CUSTOM_OBSERVERS_PACKAGE_NAME = "com.miniplay.custom.observers";
 
 
     /* DOCKER */
