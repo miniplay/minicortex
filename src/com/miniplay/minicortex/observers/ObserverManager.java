@@ -1,5 +1,7 @@
 package com.miniplay.minicortex.observers;
 
+import com.miniplay.common.Utils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -42,7 +44,7 @@ public class ObserverManager {
 
     public void debug(String message) {
         if (debug)
-            System.out.println(message);
+            System.out.println(Utils.PREPEND_OUTPUT + message);
     }
 
 }
