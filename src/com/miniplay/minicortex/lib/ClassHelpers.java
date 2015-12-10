@@ -8,7 +8,7 @@ import java.util.ArrayList;
 /**
  * Created by vxc on 10/12/15.
  */
-public class Helpers {
+public class ClassHelpers {
 
     public static ArrayList<String> getClassNamesFromPackage(String packageName) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

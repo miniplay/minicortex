@@ -1,6 +1,8 @@
 package com.miniplay.custom.observers;
 import com.miniplay.minicortex.observers.AbstractObserver;
 
+import com.miniplay.common.Utils;
+
 /**
  *
  * Created by ret on 7/12/15.
@@ -8,7 +10,7 @@ import com.miniplay.minicortex.observers.AbstractObserver;
 public class QueueObserver extends AbstractObserver {
 
     public void runObserver() {
-        System.out.println("Queue observer running...");
+        System.out.println(Utils.PREPEND_OUTPUT_OBSERVERS + "Queue observer running...");
     }
 
     public void setConfig () {

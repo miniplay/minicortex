@@ -1,13 +1,17 @@
 package com.miniplay.minicortex.server;
 
-
+import com.miniplay.common.Utils;
 import com.miniplay.common.GlobalFunctions;
+import com.miniplay.custom.observers.ContainerObserver;
+import com.miniplay.custom.observers.QueueObserver;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.lib.Helpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
+import com.miniplay.minicortex.modules.docker.DockerManager;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.observers.ObserverManager;
 import java.util.ArrayList;
+import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -16,6 +20,9 @@ import java.util.concurrent.ScheduledExecutorService;
  * Created by ret on 4/12/15.
  */
 public class CortexServer {
+
+    // Constants
+    public static final Boolean DEBUG = true;
 
     // Cortex config
     protected Config configInstance = null;
@@ -64,7 +71,7 @@ public class CortexServer {
         }
 
         // All OK, Run executors!
-        GlobalFunctions.getInstance().printOutput(" Server started!");
+        Utils.getInstance().printOutput(" Server started!");
         System.out.println("\n");
         this.runObserverRunnables();
     }
@@ -78,25 +85,29 @@ public class CortexServer {
             public void run() {
                 try {
 
-                    // @TODO: Get server usage
-                    // @TODO: log usage into statsd if available
-                    // @TODO: Print output if enabled in config
+                    Integer allContainers = elasticBalancer.getContainerManager().getAllContainers().size();
+                    Integer stoppedContainers = elasticBalancer.getContainerManager().getStoppedContainers().size();
+                    Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
 
-                    GlobalFunctions.getInstance().printOutput("Containers: 0 Registered, 0 Running, 0 Stopped");
-                    GlobalFunctions.getInstance().printOutput("Queue: 0 Pending, 0 Running");
+                    if(showConsoleOutput) {
+                        Utils.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
+                    }
+
+                    // TODO: log usage into STATSD if available
+
                 } catch (Exception e) {
                     // @TODO: Display error message
                 }
             }
         };
-        //statusThreadPool.scheduleAtFixedRate(statusRunnable, 2L, 3L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(statusRunnable, 5L, 5L, TimeUnit.SECONDS);
 
         Runnable containerStatusRunnable = new Runnable() {
             public void run() {
-                elasticBalancer.getDockerManager().loadContainers();
+                elasticBalancer.getContainerManager().loadContainers();
             }
         };
-        //statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 1L, 2L, TimeUnit.SECONDS);
+        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 5L, 5L, TimeUnit.SECONDS);
 
 
         // Iterate through Custom Observers file

@@ -4,32 +4,25 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 /**
- * App Global Functions used at any time from
- * Created by ret on 7/12/15.
+ *
+ * Created by ret on 9/12/15.
  */
-public class GlobalFunctions {
+public class CommandExecutor {
 
-    private static GlobalFunctions instance = null;
-
-    public static final String PREPEND_OUTPUT = "> CortexServer: ";
-    public static final String PREPEND_DOCKER_OUTPUT = "> Docker: ";
+    private static CommandExecutor instance = null;
 
     /**
-     * GlobalFunctions instance (Singleton)
-     * @return GlobalFunctions instance
+     * CommandExecutor instance (Singleton)
+     * @return CommandExecutor instance
      */
-    public static GlobalFunctions getInstance(){
+    public static CommandExecutor getInstance(){
         if(instance == null) {
-            instance = new GlobalFunctions();
+            instance = new CommandExecutor();
         }
         return instance;
     }
 
-    public void printOutput(Object output) {
-        System.out.println(PREPEND_OUTPUT+output);
-    }
-
-    public String executeCommand(String command) {
+    public String execute(String command) {
 
         StringBuffer output = new StringBuffer();
 
