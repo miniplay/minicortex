@@ -1,19 +1,15 @@
 package com.miniplay.minicortex.server;
 
 import com.miniplay.common.Utils;
-import com.miniplay.common.GlobalFunctions;
-import com.miniplay.custom.observers.ContainerObserver;
-import com.miniplay.custom.observers.QueueObserver;
 import com.miniplay.minicortex.config.Config;
-import com.miniplay.minicortex.lib.Helpers;
+import com.miniplay.minicortex.lib.ClassHelpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
-import com.miniplay.minicortex.modules.docker.DockerManager;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.observers.ObserverManager;
 import java.util.ArrayList;
-import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -38,8 +34,6 @@ public class CortexServer {
 
     // Observers
     private ObserverManager observerManager = null;
-    //private ContainerObserver containerObserver = null;
-    //private QueueObserver queueObserver = null;
 
     /**
      * CortexServer constructor
@@ -110,15 +104,19 @@ public class CortexServer {
         statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 5L, 5L, TimeUnit.SECONDS);
 
 
+        /**
+         * OBSERVERS AUTO-SETUP
+         */
+
         // Iterate through Custom Observers file
-        ArrayList<String> observerNames = Helpers.getClassNamesFromPackage(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME);
+        ArrayList<String> observerNames = ClassHelpers.getClassNamesFromPackage(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME);
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         ArrayList<Runnable> loadedRunnables = new ArrayList<Runnable>();
         observerManager = new ObserverManager();
 
         for (String observerClassName : observerNames) {
             try{
-                AbstractObserver loadedObserver = Helpers.instantiateClass(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME + "." + observerClassName, AbstractObserver.class);
+                AbstractObserver loadedObserver = ClassHelpers.instantiateClass(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME + "." + observerClassName, AbstractObserver.class);
                 observerManager.add(loadedObserver);
             }catch (Exception e) { /* Fail silently */}
 
