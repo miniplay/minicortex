@@ -1,12 +1,16 @@
 package com.miniplay.minicortex.server;
 
+import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
+import com.miniplay.minicortex.exceptions.DependenciesNotInstalled;
 import com.miniplay.minicortex.lib.ClassHelpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.observers.ObserverManager;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,9 +37,9 @@ public class CortexServer {
     /**
      * CortexServer constructor
      */
-    public CortexServer() {
+    public CortexServer() throws DependenciesNotInstalled {
 
-        // TODO: Check if docker & docker-machine are installed, if not throw exception and exit.
+        this.checkDependencies();
 
         // Load app config
         this.configInstance = ConfigManager.getConfig();
@@ -44,6 +48,17 @@ public class CortexServer {
         this.elasticBalancer = ElasticBalancer.getInstance();
         this.observerManager = new ObserverManager();
 
+    }
+
+    /**
+     * Check if docker & docker-machine are installed, if not throw exception and exit.
+     */
+    private void checkDependencies() throws DependenciesNotInstalled {
+        try {
+            CommandExecutor.getInstance().execute("docker-machine help");
+        }catch(IOException e) {
+            throw new DependenciesNotInstalled("Package 'docker-machine' is not installed, minicortex cannot run without it");
+        }
     }
 
     /**

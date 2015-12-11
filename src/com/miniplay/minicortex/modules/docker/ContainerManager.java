@@ -7,6 +7,7 @@ import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.server.CortexServer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -138,23 +139,28 @@ public class ContainerManager {
      * @param containerName String
      */
     public void provisionContainer(String containerName) {
-        String creationOutput = CommandExecutor.getInstance().execute(
-            "docker-machine create \\" +
-            "--driver amazonec2 \\" +
-            "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' \\" +
-            "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' \\" +
-            "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' \\" +
-            "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' \\" +
-            "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' \\" +
-            "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' \\" +
-            "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' \\" +
-            "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' \\" +
-            "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' \\" +
-            "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' \\" +
-            "--amazonec2-use-private-address \\" +
-            "--amazonec2-private-address-only "+this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY+" \\" +
-            containerName
-        );
+        try {
+
+            String creationOutput = CommandExecutor.getInstance().execute(
+                    "docker-machine create \\" +
+                            "--driver amazonec2 \\" +
+                            "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' \\" +
+                            "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' \\" +
+                            "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' \\" +
+                            "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' \\" +
+                            "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' \\" +
+                            "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' \\" +
+                            "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' \\" +
+                            "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' \\" +
+                            "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' \\" +
+                            "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' \\" +
+                            "--amazonec2-use-private-address \\" +
+                            "--amazonec2-private-address-only "+this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY+" \\" +
+                            containerName
+            );
+        } catch (IOException e) {
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
+        }
 
     }
 

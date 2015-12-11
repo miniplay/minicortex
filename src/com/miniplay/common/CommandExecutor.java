@@ -1,6 +1,9 @@
 package com.miniplay.common;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
@@ -22,7 +25,7 @@ public class CommandExecutor {
         return instance;
     }
 
-    public String execute(String command) {
+    public String execute(String command) throws IOException {
 
         StringBuffer output = new StringBuffer();
 
@@ -39,6 +42,11 @@ public class CommandExecutor {
             }
 
         } catch (Exception e) {
+            if(e instanceof IOException) {
+                if(e.getMessage().contains("No such file or directory")) {
+                    throw new IOException(e);
+                }
+            }
             e.printStackTrace();
         }
 

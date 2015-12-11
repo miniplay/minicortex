@@ -1,6 +1,9 @@
 package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.CommandExecutor;
+import com.miniplay.common.Debugger;
+
+import java.io.IOException;
 
 /**
  *
@@ -74,8 +77,12 @@ public class Container {
      * @param action String
      */
     private void changeState(String action) {
-        String commandOutput = CommandExecutor.getInstance().execute("docker-machine " + action  + " " + this.getName());
-        System.out.println(commandOutput);
+        try {
+            String commandOutput = CommandExecutor.getInstance().execute("docker-machine " + action  + " " + this.getName());
+            System.out.println(commandOutput);
+        } catch (IOException e) {
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "CONTAINER EXCEPTION: " + e.getMessage());
+        }
     }
 
 
