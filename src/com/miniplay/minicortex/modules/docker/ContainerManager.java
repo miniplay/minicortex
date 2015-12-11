@@ -1,7 +1,7 @@
 package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.CommandExecutor;
-import com.miniplay.common.Utils;
+import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.server.CortexServer;
 
@@ -62,7 +62,7 @@ public class ContainerManager {
         this.loadConfig();
 
 
-        System.out.println(Utils.PREPEND_OUTPUT + "ContainerManager Loaded OK");
+        System.out.println(Debugger.PREPEND_OUTPUT + "ContainerManager Loaded OK");
     }
 
     /**
@@ -85,7 +85,7 @@ public class ContainerManager {
      * Load containers from "docker-machine ls" into application
      */
     public void loadContainers() {
-        if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Starting containers load...");
+        if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Starting containers load...");
         try {
             String output = CommandExecutor.getInstance().execute("docker-machine ls");
             ArrayList<String> containersToAdd = new ArrayList<String>();
@@ -105,7 +105,7 @@ public class ContainerManager {
             this.registerContainersFromProcessString(containersToAdd);
 
         } catch (Exception e) {
-            System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -117,11 +117,11 @@ public class ContainerManager {
      * @param containersToAdd ArrayList
      */
     private void registerContainersFromProcessString(ArrayList<String> containersToAdd) {
-        if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Registering loaded containers");
+        if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Registering loaded containers");
         for(String processString:containersToAdd) {
             try {
                 String[] splittedProcessString = processString.split("\\|");
-                if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]");
+                if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]");
 
                 if(splittedProcessString[3].equals("Timeout")) {
                     throw new Exception("Container state was timeout, skipping");
@@ -134,9 +134,9 @@ public class ContainerManager {
 
                 Boolean registerResponse = this.registerContainer(containerName, containerDriver, containerState, containerUrl);
                 if(registerResponse) {
-                    if(CortexServer.DEBUG) System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]");
+                    if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]");
                 } else {
-                    System.out.println(Utils.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
+                    System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
                 }
             } catch (Exception e) {
                 System.out.println("Exception registering container [" + processString + "] message: " + e.getMessage());
@@ -159,7 +159,7 @@ public class ContainerManager {
             }
             return true;
         } catch (Exception e) {
-            System.out.println(Utils.PREPEND_OUTPUT_DOCKER + e.getMessage());
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + e.getMessage());
             return false;
         }
     }

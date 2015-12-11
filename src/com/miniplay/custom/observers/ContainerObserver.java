@@ -1,7 +1,6 @@
 package com.miniplay.custom.observers;
+import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.observers.AbstractObserver;
-
-import com.miniplay.common.Utils;
 
 /**
  *
@@ -10,7 +9,7 @@ import com.miniplay.common.Utils;
 public class ContainerObserver extends AbstractObserver {
 
     public void runObserver() {
-        System.out.println(Utils.PREPEND_OUTPUT_OBSERVERS + "Contanier observer running...");
+        System.out.println(Debugger.PREPEND_OUTPUT_OBSERVERS + "Contanier observer running...");
     }
 
     public void setConfig () {

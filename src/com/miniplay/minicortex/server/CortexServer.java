@@ -1,6 +1,6 @@
 package com.miniplay.minicortex.server;
 
-import com.miniplay.common.Utils;
+import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.lib.ClassHelpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
@@ -65,7 +65,7 @@ public class CortexServer {
         }
 
         // All OK, Run executors!
-        Utils.getInstance().printOutput(" Server started!");
+        Debugger.getInstance().printOutput(" Server started!");
         System.out.println("\n");
         //this.runObserverRunnables();
     }
@@ -84,7 +84,7 @@ public class CortexServer {
                     Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
 
                     if(showConsoleOutput) {
-                        Utils.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
+                        Debugger.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
                     }
 
                     // TODO: log usage into STATSD if available

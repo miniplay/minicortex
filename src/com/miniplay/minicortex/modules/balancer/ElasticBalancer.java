@@ -1,6 +1,6 @@
 package com.miniplay.minicortex.modules.balancer;
 
-import com.miniplay.common.Utils;
+import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.modules.docker.ContainerManager;
 import com.miniplay.minicortex.server.CortexServer;
@@ -44,7 +44,7 @@ public class ElasticBalancer {
 
         // All OK!
         this.isLoaded = true;
-        Utils.getInstance().printOutput("Elastic Balancer Loaded OK");
+        Debugger.getInstance().printOutput("Elastic Balancer Loaded OK");
     }
 
     private void loadConfig() {

@@ -1,3 +1,4 @@
+DEBUG                               : true
 DOCKER_DEFAULT_DRIVER               : amazonec2
 DOCKER_MIN_CONTAINERS               : 1
 DOCKER_MAX_CONTAINERS               : 10

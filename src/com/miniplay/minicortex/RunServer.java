@@ -1,7 +1,8 @@
 package com.miniplay.minicortex;
 
-import com.miniplay.common.Utils;
+import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.config.EnvironmentManager;
 import com.miniplay.minicortex.server.CortexServer;
 
@@ -21,7 +22,7 @@ public class RunServer {
             try {
                 env = new EnvironmentManager(args[0]);
             } catch (Exception e) {
-                Utils.getInstance().printOutput("Invalid environment: "+ args[2] + " using default [dev] ....");
+                Debugger.getInstance().printOutput("Invalid environment: "+ args[2] + " using default [dev] ....");
                 env = new EnvironmentManager("dev");
                 printCLISyntax();
             }
@@ -30,9 +31,9 @@ public class RunServer {
         // Load service config
         Config serviceConfig;
         if(env != null) {
-            serviceConfig = new Config(env);
+            serviceConfig = ConfigManager.getConfig(env);
         } else {
-            serviceConfig = new Config();
+            serviceConfig = ConfigManager.getConfig();;
         }
 
         // Run CortexServer
@@ -40,7 +41,7 @@ public class RunServer {
             CortexServer cortexServer = new CortexServer(serviceConfig);
             cortexServer.run();
         }catch(Exception e) {
-            Utils.getInstance().printOutput("ERROR starting "+e.getMessage());
+            Debugger.getInstance().printOutput("ERROR starting "+e.getMessage());
             printCLISyntax();
         }
 
