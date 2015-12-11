@@ -2,6 +2,8 @@ package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
+import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.server.CortexServer;
 
@@ -16,59 +18,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ContainerManager {
 
     protected ElasticBalancer elasticBalancer = null;
-    protected Map<String, Object> dockerConfig = null;
-    protected Map<String, Object> amazonEC2Config = null;
     public Boolean isLoaded = false;
-
-    /* Application registered containers */
     public volatile ConcurrentHashMap<String, Container> containers = new ConcurrentHashMap<String, Container>();
-
-    /* DOCKER */
-    public String DOCKER_DEFAULT_DRIVER = null;
-    public Integer DOCKER_MIN_CONTAINERS = null;
-    public Integer DOCKER_MAX_CONTAINERS = null;
-    public Integer DOCKER_MAX_BOOTS_IN_LOOP = null;
-    public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
-    public Boolean DOCKER_TERMINATE_MODE = null;
-
-    /* AMAZON EC2 DOCKER DRIVER */
-    public String AMAZONEC2_REGION = null;
-    public String AMAZONEC2_ACCESS_KEY = null;
-    public String AMAZONEC2_SECRET_KEY = null;
-    public String AMAZONEC2_VPC_ID = null;
-    public String AMAZONEC2_ZONE = null;
-    public String AMAZONEC2_SSH_USER = null;
-    public String AMAZONEC2_INSTANCE_TYPE = null;
-    public String AMAZONEC2_AMI = null;
-    public String AMAZONEC2_SUBNET_ID = null;
-    public String AMAZONEC2_SECURITY_GROUP = null;
-    public Boolean AMAZONEC2_USE_PRIVATE_ADDRESS = null;
-    public Boolean AMAZONEC2_PRIVATE_ADDRESS_ONLY = null;
+    private Config config = null;
 
     /**
      * ContainerManager constructor
      * @param elasticBalancer ElasticBalancer
-     * @param dockerConfig Map
-     * @param amazonEC2Config Map
      */
-    public ContainerManager(ElasticBalancer elasticBalancer, Map<String, Object> dockerConfig, Map<String, Object> amazonEC2Config) {
-        // Load elastic balancer instance
+    public ContainerManager(ElasticBalancer elasticBalancer) {
         this.elasticBalancer = elasticBalancer;
-
-        // Load docker & EC2 config
-        this.dockerConfig = dockerConfig;
-        this.amazonEC2Config = amazonEC2Config;
-
         this.loadConfig();
-
 
         System.out.println(Debugger.PREPEND_OUTPUT + "ContainerManager Loaded OK");
     }
 
     /**
-     * TODO: Load config from file
+     * Load conf into obj
      */
     private void loadConfig() {
+        this.config = ConfigManager.getConfig();
+
         this.isLoaded = true;
     }
 
@@ -85,7 +55,7 @@ public class ContainerManager {
      * Load containers from "docker-machine ls" into application
      */
     public void loadContainers() {
-        if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Starting containers load...");
+        Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Starting containers load...", this.getClass());
         try {
             String output = CommandExecutor.getInstance().execute("docker-machine ls");
             ArrayList<String> containersToAdd = new ArrayList<String>();
@@ -117,11 +87,11 @@ public class ContainerManager {
      * @param containersToAdd ArrayList
      */
     private void registerContainersFromProcessString(ArrayList<String> containersToAdd) {
-        if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Registering loaded containers");
+        Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Registering loaded containers", this.getClass());
         for(String processString:containersToAdd) {
             try {
                 String[] splittedProcessString = processString.split("\\|");
-                if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]");
+                Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]", this.getClass());
 
                 if(splittedProcessString[3].equals("Timeout")) {
                     throw new Exception("Container state was timeout, skipping");
@@ -134,7 +104,7 @@ public class ContainerManager {
 
                 Boolean registerResponse = this.registerContainer(containerName, containerDriver, containerState, containerUrl);
                 if(registerResponse) {
-                    if(CortexServer.DEBUG) System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]");
+                    Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]", this.getClass());
                 } else {
                     System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
                 }
@@ -172,18 +142,18 @@ public class ContainerManager {
         String creationOutput = CommandExecutor.getInstance().execute(
             "docker-machine create \\" +
             "--driver amazonec2 \\" +
-            "--amazonec2-region '"+this.AMAZONEC2_REGION+"' \\" +
-            "--amazonec2-access-key '"+this.AMAZONEC2_ACCESS_KEY+"' \\" +
-            "--amazonec2-secret-key '"+this.AMAZONEC2_SECRET_KEY+"' \\" +
-            "--amazonec2-vpc-id '"+this.AMAZONEC2_VPC_ID+"' \\" +
-            "--amazonec2-zone '"+this.AMAZONEC2_ZONE+"' \\" +
-            "--amazonec2-ssh-user '"+this.AMAZONEC2_SSH_USER+"' \\" +
-            "--amazonec2-instance-type '"+this.AMAZONEC2_INSTANCE_TYPE+"' \\" +
-            "--amazonec2-ami '"+this.AMAZONEC2_AMI+"' \\" +
-            "--amazonec2-subnet-id '"+this.AMAZONEC2_SUBNET_ID+"' \\" +
-            "--amazonec2-security-group '"+this.AMAZONEC2_SECURITY_GROUP+"' \\" +
+            "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' \\" +
+            "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' \\" +
+            "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' \\" +
+            "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' \\" +
+            "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' \\" +
+            "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' \\" +
+            "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' \\" +
+            "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' \\" +
+            "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' \\" +
+            "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' \\" +
             "--amazonec2-use-private-address \\" +
-            "--amazonec2-private-address-only "+this.AMAZONEC2_PRIVATE_ADDRESS_ONLY+" \\" +
+            "--amazonec2-private-address-only "+this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY+" \\" +
             containerName
         );
 

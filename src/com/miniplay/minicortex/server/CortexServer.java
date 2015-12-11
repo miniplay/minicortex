@@ -2,6 +2,7 @@ package com.miniplay.minicortex.server;
 
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.lib.ClassHelpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
@@ -17,13 +18,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class CortexServer {
 
-    // Constants
-    public static final Boolean DEBUG = true;
-
     // Cortex config
     protected Config configInstance = null;
-    protected Boolean showConsoleOutput = true;
-    protected Boolean showServerExceptions = true;
 
     // Executors
     public ScheduledExecutorService statusThreadPool = Executors.newScheduledThreadPool(2);
@@ -37,16 +33,14 @@ public class CortexServer {
     /**
      * CortexServer constructor
      */
-    public CortexServer(Config config) {
-
-        this.configInstance = config;
+    public CortexServer() {
 
         // Load app config
-        this.showConsoleOutput = config.isShowServerConsoleOutput();
-        this.showServerExceptions = config.isShowExceptions();
+        this.configInstance = ConfigManager.getConfig();
 
-        // Instantiate modules
-        this.elasticBalancer = new ElasticBalancer(this, config);
+        // Load Modules
+        this.elasticBalancer = ElasticBalancer.getInstance();
+        this.observerManager = new ObserverManager();
 
     }
 
@@ -79,9 +73,7 @@ public class CortexServer {
                     Integer stoppedContainers = elasticBalancer.getContainerManager().getStoppedContainers().size();
                     Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
 
-                    if(showConsoleOutput) {
-                        Debugger.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
-                    }
+                    Debugger.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
 
                     // TODO: log usage into STATSD if available
 
@@ -103,12 +95,10 @@ public class CortexServer {
         /**
          * OBSERVERS AUTO-SETUP
          */
-
         // Iterate through Custom Observers file
         ArrayList<String> observerNames = ClassHelpers.getClassNamesFromPackage(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME);
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         ArrayList<Runnable> loadedRunnables = new ArrayList<Runnable>();
-        observerManager = new ObserverManager();
 
         for (String observerClassName : observerNames) {
             try{

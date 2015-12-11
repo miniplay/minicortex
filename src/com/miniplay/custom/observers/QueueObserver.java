@@ -43,7 +43,7 @@ public class QueueObserver extends AbstractObserver {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-        return "EMPTY";
+        return null;
     }
 
 }

@@ -1,6 +1,7 @@
 package com.miniplay.minicortex.observers;
 
-import com.miniplay.common.Utils;
+import com.miniplay.common.Debugger;
+import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +15,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class ObserverManager {
 
-    protected boolean debug = true;
-
     public List<AbstractObserver> loggedObservers = new ArrayList<AbstractObserver>();
 
     public ScheduledExecutorService observersThreadPool = null;
 
+    /**
+     * @param observer
+     */
     public void add(AbstractObserver observer) {
         this.loggedObservers.add(observer);
         observer.setObserverManager(this);
@@ -33,18 +35,12 @@ public class ObserverManager {
         for (AbstractObserver loggedObserver : this.loggedObservers) {
             try{
                 Runnable runnable = loggedObserver.getRunnable();
-                debug("Logging runnable " + loggedObserver.getClass() + " with " + loggedObserver.secsSpanBeforeStart + " secs as SpanSecsBeforeStart and " + loggedObserver.secsIntervalSpan + " secs as interval span");
+                Debugger.getInstance().print("Logging runnable " + loggedObserver.getClass() + " with " + loggedObserver.secsSpanBeforeStart + " secs as SpanSecsBeforeStart and " + loggedObserver.secsIntervalSpan + " secs as interval span", this.getClass());
                 observersThreadPool.scheduleAtFixedRate(runnable, loggedObserver.secsSpanBeforeStart, loggedObserver.secsIntervalSpan, TimeUnit.SECONDS);
             }catch (Exception e) {
-                debug("Error while trying to schedule observer: " + e.getMessage());
+                Debugger.getInstance().print("Error while trying to schedule observer: " + e.getMessage(), this.getClass());
             }
 
         }
     }
-
-    public void debug(String message) {
-        if (debug)
-            System.out.println(Utils.PREPEND_OUTPUT + message);
-    }
-
 }

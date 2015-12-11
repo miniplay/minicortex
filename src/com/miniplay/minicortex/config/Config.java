@@ -21,8 +21,6 @@ public class Config {
      ***************/
 
     /* MiniCortex */
-    private boolean showServerConsoleOutput = true;
-    private boolean showExceptions = true;
     private String version = "0.0.1";
     public String CUSTOM_OBSERVERS_PACKAGE_NAME = "com.miniplay.custom.observers";
     public static String CUSTOM_CONFIG_FILE_NAME = "config.yml";
@@ -54,7 +52,7 @@ public class Config {
     public String AMAZONEC2_SUBNET_ID = "";
     public String AMAZONEC2_SECURITY_GROUP = "";
     public Boolean AMAZONEC2_USE_PRIVATE_ADDRESS = true;
-    public Boolean AMAZONEC2_PRIVATE_ADDRESS_ONYL = true;
+    public Boolean AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
 
     /* ELASTIC BALANCER */
     public Boolean EB_ALLOW_PRIVISION_CONTAINERS = true;
@@ -149,13 +147,6 @@ public class Config {
         return true; // @todo
     }
 
-    public void startServerConsoleOutput() {
-        this.showServerConsoleOutput = true;
-    }
-    public void stopServerConsoleOutput() {
-        this.showServerConsoleOutput = false;
-    }
-
     /*********
      * GETTERS
      *********/
@@ -210,15 +201,9 @@ public class Config {
     }
 
     public EnvironmentManager getEnvironment() {return environment;}
-    public boolean isShowExceptions() {return showExceptions;}
-    public boolean isShowServerConsoleOutput() {return showServerConsoleOutput;}
 
     /*********
      * SETTERS
      *********/
-
-    public void enableShowExceptions() {showExceptions = true;}
-    public void disableShowExceptions() {showExceptions = false;}
-    public void setShowServerConsoleOutput(boolean showServerConsoleOutput) {this.showServerConsoleOutput = showServerConsoleOutput;}
 
 }

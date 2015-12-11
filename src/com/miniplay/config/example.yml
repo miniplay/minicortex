@@ -16,7 +16,7 @@ AMAZONEC2_AMI                       : null
 AMAZONEC2_SUBNET_ID                 : null
 AMAZONEC2_SECURITY_GROUP            : null
 AMAZONEC2_USE_PRIVATE_ADDRESS       : null
-AMAZONEC2_PRIVATE_ADDRESS_ONYL      : null
+AMAZONEC2_PRIVATE_ADDRESS_ONLY      : null
 EB_ALLOW_PRIVISION_CONTAINERS       : false
 EB_MAX_PROVISION_CONTAINERS         : 0
 STATSD_HOST                         : null

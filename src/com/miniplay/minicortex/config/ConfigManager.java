@@ -22,6 +22,14 @@ public class ConfigManager {
     }
 
     /**
+     * @param environmentManager EnvironmentManager
+     * @return Config
+     */
+    public static Config loadConfig(EnvironmentManager environmentManager) {
+        return getConfig(environmentManager);
+    }
+
+    /**
      * @return Config
      */
     public static Config getConfig(){

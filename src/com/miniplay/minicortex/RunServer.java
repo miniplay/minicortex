@@ -29,16 +29,11 @@ public class RunServer {
         }
 
         // Load service config
-        Config serviceConfig;
-        if(env != null) {
-            serviceConfig = ConfigManager.getConfig(env);
-        } else {
-            serviceConfig = ConfigManager.getConfig();;
-        }
+        ConfigManager.loadConfig(env);
 
         // Run CortexServer
         try {
-            CortexServer cortexServer = new CortexServer(serviceConfig);
+            CortexServer cortexServer = new CortexServer();
             cortexServer.run();
         }catch(Exception e) {
             Debugger.getInstance().printOutput("ERROR starting "+e.getMessage());
