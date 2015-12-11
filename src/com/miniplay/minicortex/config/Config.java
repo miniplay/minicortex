@@ -13,7 +13,7 @@ import com.miniplay.config.ConfigBeacon;
 
 public class Config {
 
-    private EnvironmentManager environment;
+    protected EnvironmentManager environment;
 
 
     /***************
@@ -77,6 +77,13 @@ public class Config {
      * @param environment
      */
     protected Config(EnvironmentManager environment) {
+        if (environment == null){
+            try {
+                environment = new EnvironmentManager("dev");
+            }catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         this.environment = environment;
         initConfig();
     }
@@ -131,11 +138,8 @@ public class Config {
         }
 
         if (this.isDebug()) {
-            System.out.println("[" + this.getClass() + "]: New config initialized (Environment: " + environment.getEnvironmentName() + ")");
+            System.out.println("[" + this.getClass() + "]: New config initialized (Environment: " + this.environment.getEnvironmentName() + ")");
         }
-
-        System.out.println(this.AMAZONEC2_SECRET_KEY);
-        System.out.println(this.AMAZONEC2_ACCESS_KEY);
 
     }
 

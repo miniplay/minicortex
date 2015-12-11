@@ -10,7 +10,7 @@ public class EnvironmentManager {
        if (env.equals("prod")) {
            environment="prod";
        }
-       System.out.println("> Environment Initialized: "+environment);
+       // System.out.println("> Environment Initialized: "+environment);
     }
 
     public EnvironmentManager(String[] args) throws InterruptedException {
@@ -19,7 +19,7 @@ public class EnvironmentManager {
        if (args.length>0 && args[0].equals("prod")) {
            environment="prod";
        }
-       System.out.println("> Environment Initialized: "+environment);
+       // System.out.println("> Environment Initialized: "+environment);
     }
 
     public String get() {
