@@ -27,7 +27,6 @@ public class CortexServer {
 
     // Executors
     public ScheduledExecutorService statusThreadPool = Executors.newScheduledThreadPool(2);
-    //public ScheduledExecutorService observersThreadPool = Executors.newScheduledThreadPool(2);
 
     // Modules
     private ElasticBalancer elasticBalancer = null;
@@ -49,10 +48,6 @@ public class CortexServer {
         // Instantiate modules
         this.elasticBalancer = new ElasticBalancer(this, config);
 
-        // Register observers
-        //this.containerObserver = new ContainerObserver();
-        //this.queueObserver = new QueueObserver();
-
     }
 
     /**
@@ -67,7 +62,7 @@ public class CortexServer {
         // All OK, Run executors!
         Debugger.getInstance().printOutput(" Server started!");
         System.out.println("\n");
-        //this.runObserverRunnables();
+        this.runObserverRunnables();
     }
 
     /**
@@ -75,6 +70,7 @@ public class CortexServer {
      */
     private void runObserverRunnables() {
 
+        // TODO: Move statusRunnable to custom/status
         Runnable statusRunnable = new Runnable() {
             public void run() {
                 try {
