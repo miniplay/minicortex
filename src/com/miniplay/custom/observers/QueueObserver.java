@@ -1,5 +1,7 @@
 package com.miniplay.custom.observers;
-import com.miniplay.common.Debugger;
+import com.google.gson.Gson;
+import com.miniplay.custom.ObserverHelpers.Queue.StatusMessage;
+import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,12 +15,29 @@ import java.net.URL;
  */
 public class QueueObserver extends AbstractObserver {
 
-    public static final String QUEUE_STATUS_URL = "http://api.minijuegos.com/external/monitoring/gearman/jobs";
+    public static final String QUEUE_STATUS_URL = "http://api.minijuegos.com/external/monitoring/gearman/jobs?json=1";
+    public Gson gson = new Gson();
+    public static final String LOG_PREPEND = "> Queue Observer: ";
 
     public void runObserver() {
-        System.out.println(Debugger.PREPEND_OUTPUT_OBSERVERS + "Queue observer running...");
+        System.out.println(LOG_PREPEND + "Updating queue values...");
         String queueStatusOutput = this.fetch();
-        System.out.println(queueStatusOutput);
+
+        StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
+
+        ElasticBalancer.getInstance().workers.set(statusMessage.workers);
+        ElasticBalancer.getInstance().trackers.set(statusMessage.trackers);
+        ElasticBalancer.getInstance().importers.set(statusMessage.importers);
+        ElasticBalancer.getInstance().importers_queued_jobs.set(statusMessage.importers_queued_jobs);
+        ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
+
+        System.out.println(LOG_PREPEND + "\t"
+                + ElasticBalancer.getInstance().workers + " [WORKERS] \t"
+                + ElasticBalancer.getInstance().trackers + " [TRACKERS] \t"
+                + ElasticBalancer.getInstance().importers + " [IMPORTERS] \t"
+                + ElasticBalancer.getInstance().importers_queued_jobs + " [IMPORTER_QUEUED_JOBS] \t"
+                + ElasticBalancer.getInstance().workers_queued_jobs + " [WORKER_QUEUED_JOBS] \t"
+        );
     }
 
     public void setConfig () {

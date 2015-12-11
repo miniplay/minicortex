@@ -8,6 +8,7 @@ import com.miniplay.minicortex.server.CortexServer;
 
 import java.security.InvalidParameterException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Cortex Elastic Balancer
@@ -19,6 +20,12 @@ public class ElasticBalancer {
     public Boolean EB_ALLOW_PRIVISION_CONTAINERS = false;
     public Integer EB_MAX_PROVISION_CONTAINERS = 0;
     public Boolean isLoaded = false;
+
+    public AtomicInteger workers = new AtomicInteger();
+    public AtomicInteger trackers = new AtomicInteger();
+    public AtomicInteger importers = new AtomicInteger();
+    public AtomicInteger importers_queued_jobs = new AtomicInteger();
+    public AtomicInteger workers_queued_jobs = new AtomicInteger();
 
     /* Modules */
     private ContainerManager containerManager = null;

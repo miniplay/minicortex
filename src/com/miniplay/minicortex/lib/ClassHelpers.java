@@ -26,6 +26,7 @@ public class ClassHelpers {
             File[] folderFiles = folder.listFiles();
             String entryName;
             for(File actual: folderFiles){
+                if (actual.isDirectory()) { continue; } // Exclude directories
                 entryName = actual.getName();
                 entryName = entryName.substring(0, entryName.lastIndexOf('.'));
                 names.add(entryName);

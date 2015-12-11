@@ -55,7 +55,6 @@ public class ContainerManager {
      * Load containers from "docker-machine ls" into application
      */
     public void loadContainers() {
-        Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Starting containers load...", this.getClass());
         try {
             String output = CommandExecutor.getInstance().execute("docker-machine ls");
             ArrayList<String> containersToAdd = new ArrayList<String>();
@@ -87,11 +86,11 @@ public class ContainerManager {
      * @param containersToAdd ArrayList
      */
     private void registerContainersFromProcessString(ArrayList<String> containersToAdd) {
-        Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Registering loaded containers", this.getClass());
+        Debugger.getInstance().print("Registering loaded containers", this.getClass());
         for(String processString:containersToAdd) {
             try {
                 String[] splittedProcessString = processString.split("\\|");
-                Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Registering container ["+processString+"]", this.getClass());
+                Debugger.getInstance().print("Registering container ["+processString+"]", this.getClass());
 
                 if(splittedProcessString[3].equals("Timeout")) {
                     throw new Exception("Container state was timeout, skipping");
@@ -104,7 +103,7 @@ public class ContainerManager {
 
                 Boolean registerResponse = this.registerContainer(containerName, containerDriver, containerState, containerUrl);
                 if(registerResponse) {
-                    Debugger.getInstance().print(Debugger.PREPEND_OUTPUT_DOCKER + "Registered new container ["+containerName+"]", this.getClass());
+                    Debugger.getInstance().print("Registered new container ["+containerName+"]", this.getClass());
                 } else {
                     System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
                 }

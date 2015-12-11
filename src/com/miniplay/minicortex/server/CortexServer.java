@@ -35,6 +35,8 @@ public class CortexServer {
      */
     public CortexServer() {
 
+        // TODO: Check if docker & docker-machine are installed, if not throw exception and exit.
+
         // Load app config
         this.configInstance = ConfigManager.getConfig();
 
@@ -60,41 +62,9 @@ public class CortexServer {
     }
 
     /**
-     * Observers the CortexServer is going to run periodically
+     * Observers the CortexServer is going to run periodically (AUTO-SETUP)
      */
     private void runObserverRunnables() {
-
-        // TODO: Move statusRunnable to custom/status
-        Runnable statusRunnable = new Runnable() {
-            public void run() {
-                try {
-
-                    Integer allContainers = elasticBalancer.getContainerManager().getAllContainers().size();
-                    Integer stoppedContainers = elasticBalancer.getContainerManager().getStoppedContainers().size();
-                    Integer runningContainers = elasticBalancer.getContainerManager().getRunningContainers().size();
-
-                    Debugger.getInstance().printOutput("Containers - "+ allContainers +" Registered, "+ runningContainers +" Running, "+ stoppedContainers +" Stopped");
-
-                    // TODO: log usage into STATSD if available
-
-                } catch (Exception e) {
-                    // @TODO: Display error message
-                }
-            }
-        };
-        statusThreadPool.scheduleAtFixedRate(statusRunnable, 5L, 5L, TimeUnit.SECONDS);
-
-        Runnable containerStatusRunnable = new Runnable() {
-            public void run() {
-                elasticBalancer.getContainerManager().loadContainers();
-            }
-        };
-        statusThreadPool.scheduleAtFixedRate(containerStatusRunnable, 5L, 5L, TimeUnit.SECONDS);
-
-
-        /**
-         * OBSERVERS AUTO-SETUP
-         */
         // Iterate through Custom Observers file
         ArrayList<String> observerNames = ClassHelpers.getClassNamesFromPackage(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME);
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -109,7 +79,6 @@ public class CortexServer {
         }
 
         observerManager.startRunnables();
-
 
     }
 

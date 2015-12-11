@@ -1,5 +1,6 @@
 package com.miniplay.custom.observers;
 import com.miniplay.common.Debugger;
+import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 
 /**
@@ -8,13 +9,31 @@ import com.miniplay.minicortex.observers.AbstractObserver;
  */
 public class ContainerObserver extends AbstractObserver {
 
+    public static final String LOG_PREPEND = "> Container Observer: ";
+
     public void runObserver() {
-        System.out.println(Debugger.PREPEND_OUTPUT_OBSERVERS + "Contanier observer running...");
+        System.out.println( LOG_PREPEND+ "Loading containers...");
+
+        ElasticBalancer.getInstance().getContainerManager().loadContainers();
+
+        Integer allContainers = ElasticBalancer.getInstance().getContainerManager().getAllContainers().size();
+        Integer stoppedContainers = ElasticBalancer.getInstance().getContainerManager().getStoppedContainers().size();
+        Integer runningContainers = ElasticBalancer.getInstance().getContainerManager().getRunningContainers().size();
+        Integer stoppingContainers = ElasticBalancer.getInstance().getContainerManager().getStoppingContainers().size();
+        Integer startingContainers = ElasticBalancer.getInstance().getContainerManager().getStartingContainers().size();
+
+        System.out.println(LOG_PREPEND + "\t" +
+                allContainers +" [REGISTER] \t"+
+                runningContainers +" [RUNNING] \t"+
+                stoppedContainers +" [STOPPED] \t" +
+                stoppingContainers +" [STOPPING] \t" +
+                startingContainers +" [STARTING] \t "
+        );
     }
 
     public void setConfig () {
-        this.secsSpanBeforeStart = 1L;
-        this.secsIntervalSpan = 3L;
+        this.secsSpanBeforeStart = 3L;
+        this.secsIntervalSpan = 4L;
     }
     
 }
