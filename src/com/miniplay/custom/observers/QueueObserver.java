@@ -1,8 +1,6 @@
 package com.miniplay.custom.observers;
+import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.observers.AbstractObserver;
-
-import com.miniplay.common.Utils;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,7 +16,7 @@ public class QueueObserver extends AbstractObserver {
     public static final String QUEUE_STATUS_URL = "http://api.minijuegos.com/external/monitoring/gearman/jobs";
 
     public void runObserver() {
-        System.out.println(Utils.PREPEND_OUTPUT_OBSERVERS + "Queue observer running...");
+        System.out.println(Debugger.PREPEND_OUTPUT_OBSERVERS + "Queue observer running...");
         String queueStatusOutput = this.fetch();
         System.out.println(queueStatusOutput);
     }
