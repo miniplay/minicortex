@@ -24,6 +24,7 @@ public class Config {
     private String version = "0.0.1";
     public String CUSTOM_OBSERVERS_PACKAGE_NAME = "com.miniplay.custom.observers";
     public static String CUSTOM_CONFIG_FILE_NAME = "config.yml";
+    public static String CUSTOM_CONFIG_FILE_NAME_DEV = "config_dev.yml";
 
     /***************
      * CUSTOM CONFIG
@@ -39,6 +40,7 @@ public class Config {
     public Integer DOCKER_MAX_BOOTS_IN_LOOP = null;
     public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
     public Boolean DOCKER_TERMINATE_MODE = false;
+    public String DOCKER_CONTAINER_HOSTNAME_BASENAME = "worker-";
 
     /* AMAZON EC2 DOCKER DRIVER */
     public String AMAZONEC2_REGION = "";
@@ -57,6 +59,7 @@ public class Config {
     /* ELASTIC BALANCER */
     public Boolean EB_ALLOW_PRIVISION_CONTAINERS = true;
     public Integer EB_MAX_PROVISION_CONTAINERS = 5;
+    public Integer EB_TOLERANCE_THRESHOLD = 3;
 
     /* STATSD */
     public String STATSD_HOST = "";
@@ -104,7 +107,7 @@ public class Config {
 
         Yaml yaml = new Yaml();
         ConfigBeacon configBeacon = new ConfigBeacon();
-        File configFile = configBeacon.getConfigFile();
+        File configFile = configBeacon.getConfigFile(this.environment);
 
         try {
 

@@ -31,7 +31,8 @@ public class CommandExecutor {
 
         Process p;
         try {
-            p = Runtime.getRuntime().exec(command);
+            String[] commandPlusArgs = new String[]{ "/bin/sh", "-c", command };
+            p = Runtime.getRuntime().exec(commandPlusArgs);
             p.waitFor();
             BufferedReader reader =
                     new BufferedReader(new InputStreamReader(p.getInputStream()));

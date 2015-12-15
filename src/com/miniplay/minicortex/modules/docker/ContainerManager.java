@@ -8,6 +8,11 @@ import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.server.CortexServer;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,11 +92,11 @@ public class ContainerManager {
      * @param containersToAdd ArrayList
      */
     private void registerContainersFromProcessString(ArrayList<String> containersToAdd) {
-        Debugger.getInstance().print("Registering loaded containers", this.getClass());
+        Debugger.getInstance().debug("Registering loaded containers", this.getClass());
         for(String processString:containersToAdd) {
             try {
                 String[] splittedProcessString = processString.split("\\|");
-                Debugger.getInstance().print("Registering container ["+processString+"]", this.getClass());
+                Debugger.getInstance().debug("Registering container ["+processString+"]", this.getClass());
 
                 if(splittedProcessString[3].equals("Timeout")) {
                     throw new Exception("Container state was timeout, skipping");
@@ -104,7 +109,7 @@ public class ContainerManager {
 
                 Boolean registerResponse = this.registerContainer(containerName, containerDriver, containerState, containerUrl);
                 if(registerResponse) {
-                    Debugger.getInstance().print("Registered new container ["+containerName+"]", this.getClass());
+                    Debugger.getInstance().debug("Registered new container ["+containerName+"]", this.getClass());
                 } else {
                     System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
                 }
@@ -140,24 +145,44 @@ public class ContainerManager {
      */
     public void provisionContainer(String containerName) {
         try {
+            Debugger.getInstance().printOutput("Provisioning new container ["+containerName+"]");
+            String command;
+            if(this.config.AMAZONEC2_AMI != null) {
+                command = "docker-machine create " +
+                        "--driver amazonec2 " +
+                        "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' " +
+                        "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' " +
+                        "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' " +
+                        "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' " +
+                        "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' " +
+                        "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' " +
+                        "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' " +
+                        "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' " +
+                        "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' " +
+                        "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' " +
+                        //"--amazonec2-use-private-address " +
+                        //"--amazonec2-private-address-only '"+String.valueOf(this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY)+"' " +
+                        containerName;
+            } else {
+                command = "docker-machine create " +
+                        "--driver amazonec2 " +
+                        "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' " +
+                        "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' " +
+                        "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' " +
+                        "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' " +
+                        "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' " +
+                        "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' " +
+                        "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' " +
+                        "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' " +
+                        "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' " +
+                        //"--amazonec2-use-private-address " +
+                        //"--amazonec2-private-address-only '"+String.valueOf(this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY)+"' " +
+                        containerName;
+            }
 
-            String creationOutput = CommandExecutor.getInstance().execute(
-                    "docker-machine create \\" +
-                            "--driver amazonec2 \\" +
-                            "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' \\" +
-                            "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' \\" +
-                            "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' \\" +
-                            "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' \\" +
-                            "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' \\" +
-                            "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' \\" +
-                            "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' \\" +
-                            "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' \\" +
-                            "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' \\" +
-                            "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' \\" +
-                            "--amazonec2-use-private-address \\" +
-                            "--amazonec2-private-address-only "+this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY+" \\" +
-                            containerName
-            );
+            System.out.println(command);
+            String creationOutput = CommandExecutor.getInstance().execute(command);
+            System.out.println(creationOutput);
         } catch (IOException e) {
             System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
         }
@@ -228,4 +253,22 @@ public class ContainerManager {
         return matchContainers;
     }
 
+    public void provisionContainers(Integer containersToProvision) {
+
+        for(int i = 1; i<=containersToProvision; i++) {
+            Debugger.getInstance().printOutput("Provisioning container "+i+"/"+containersToProvision);
+            try {
+                // Generate secure random string
+                SecureRandom random = new SecureRandom();
+                String randomString =  new BigInteger(130, random).toString(32);
+
+                // Privision container with random name
+                String containerName = ConfigManager.getConfig().DOCKER_CONTAINER_HOSTNAME_BASENAME + randomString.substring(2,7);
+                this.provisionContainer(containerName);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

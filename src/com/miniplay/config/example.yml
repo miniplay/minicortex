@@ -19,7 +19,6 @@ AMAZONEC2_USE_PRIVATE_ADDRESS       : null
 AMAZONEC2_PRIVATE_ADDRESS_ONLY      : null
 EB_ALLOW_PRIVISION_CONTAINERS       : false
 EB_MAX_PROVISION_CONTAINERS         : 0
+EB_TOLERANCE_THRESHOLD              : 3
 STATSD_HOST                         : null
 STATSD_PORT                         : 8125
-GEARMAN_HOST                        : null
-GEARMAN_PORT                        : 4730

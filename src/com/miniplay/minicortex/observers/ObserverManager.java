@@ -20,13 +20,17 @@ public class ObserverManager {
     public ScheduledExecutorService observersThreadPool = null;
 
     /**
-     * @param observer
+     * Add's a new observer to the application
+     * @param observer AbstractObserver
      */
     public void add(AbstractObserver observer) {
         this.loggedObservers.add(observer);
         observer.setObserverManager(this);
     }
 
+    /**
+     * Starts all the registered observers runnables
+     */
     public void startRunnables() {
 
         // Initialize threadpool depending on observers length
@@ -35,10 +39,10 @@ public class ObserverManager {
         for (AbstractObserver loggedObserver : this.loggedObservers) {
             try{
                 Runnable runnable = loggedObserver.getRunnable();
-                Debugger.getInstance().print("Logging runnable " + loggedObserver.getClass() + " with " + loggedObserver.secsSpanBeforeStart + " secs as SpanSecsBeforeStart and " + loggedObserver.secsIntervalSpan + " secs as interval span", this.getClass());
+                Debugger.getInstance().debug("Logging runnable " + loggedObserver.getClass() + " with " + loggedObserver.secsSpanBeforeStart + " secs as SpanSecsBeforeStart and " + loggedObserver.secsIntervalSpan + " secs as interval span", this.getClass());
                 observersThreadPool.scheduleAtFixedRate(runnable, loggedObserver.secsSpanBeforeStart, loggedObserver.secsIntervalSpan, TimeUnit.SECONDS);
             }catch (Exception e) {
-                Debugger.getInstance().print("Error while trying to schedule observer: " + e.getMessage(), this.getClass());
+                Debugger.getInstance().debug("Error while trying to schedule observer: " + e.getMessage(), this.getClass());
             }
 
         }

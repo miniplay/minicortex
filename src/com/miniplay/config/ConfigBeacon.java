@@ -1,6 +1,7 @@
 package com.miniplay.config;
 
 import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.config.EnvironmentManager;
 
 import java.io.File;
 import java.net.URL;
@@ -11,8 +12,13 @@ import java.net.URL;
  */
 public class ConfigBeacon {
 
-    public File getConfigFile() {
-        URL url = getClass().getResource(Config.CUSTOM_CONFIG_FILE_NAME);
+    public File getConfigFile(EnvironmentManager environment) {
+        URL url;
+        if(environment.isDev()) {
+            url = getClass().getResource(Config.CUSTOM_CONFIG_FILE_NAME_DEV);
+        } else {
+            url = getClass().getResource(Config.CUSTOM_CONFIG_FILE_NAME);
+        }
         return new File(url.getPath());
     }
 }

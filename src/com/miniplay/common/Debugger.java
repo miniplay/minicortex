@@ -30,10 +30,14 @@ public class Debugger {
         System.out.println(PREPEND_OUTPUT+output);
     }
 
-    public void print(Object message, Class<?> context) {
+    public void debug(Object message, Class<?> context) {
         if (ConfigManager.getConfig().isDebug()) {
-            System.out.println("[" + context.getName() + "]: " + message);
+            this.print(message, context);
         }
+    }
+
+    public void print(Object message, Class<?> context) {
+        System.out.println("[" + context.getName() + "]: " + message);
     }
 
 }

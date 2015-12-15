@@ -13,3 +13,4 @@ hs_err_pid*
 #IDE EXCLUDES
 .idea
 config.yml
+config_dev.yml

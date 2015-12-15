@@ -7,7 +7,11 @@ import com.miniplay.minicortex.modules.docker.ContainerManager;
 import com.miniplay.minicortex.server.CortexServer;
 
 import java.security.InvalidParameterException;
+import java.security.KeyStore;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -19,13 +23,18 @@ public class ElasticBalancer {
     /* Elastic Balancer Conf */
     public Boolean EB_ALLOW_PRIVISION_CONTAINERS = false;
     public Integer EB_MAX_PROVISION_CONTAINERS = 0;
+    public Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
 
+    /* Workers status */
     public AtomicInteger workers = new AtomicInteger();
-    public AtomicInteger trackers = new AtomicInteger();
-    public AtomicInteger importers = new AtomicInteger();
-    public AtomicInteger importers_queued_jobs = new AtomicInteger();
     public AtomicInteger workers_queued_jobs = new AtomicInteger();
+
+    /* Elastic balancer config */
+    public ScheduledExecutorService balancerThreadPool = Executors.newScheduledThreadPool(2);
+    Runnable balancerRunnable = null;
+    public Long balancerRunnableTimeBeforeStart = 5L;
+    public Long balancerRunnableTimeInterval = 5L;
 
     /* Modules */
     private ContainerManager containerManager = null;
@@ -51,6 +60,7 @@ public class ElasticBalancer {
      * ElasticBalancer constructor
      */
     public ElasticBalancer() {
+        Debugger.getInstance().printOutput("Loading Elastic Balancer...");
 
         // Load & validate config
         this.loadConfig();
@@ -58,9 +68,33 @@ public class ElasticBalancer {
         // Load Docker config
         this.containerManager = new ContainerManager(this);
 
+        // Provision containers if needed (config EB_MAX_PROVISION_CONTAINERS)
+        this.triggerProvisionContainers();
+
+        // Start Balancer runnable
+        this.startBalancerRunnable();
+
         // All OK!
         this.isLoaded = true;
         Debugger.getInstance().printOutput("Elastic Balancer Loaded OK");
+    }
+
+    private void triggerProvisionContainers() {
+        // Force first manual containers load
+        getContainerManager().loadContainers();
+        Integer currentContainers = getContainerManager().getAllContainers().size();
+        Integer maxContainers = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
+
+        Debugger.getInstance().printOutput("Current containers " + currentContainers + ", Max containers " + maxContainers);
+
+        if(maxContainers > currentContainers) {
+            Integer containersToProvision = maxContainers - currentContainers;
+            Debugger.getInstance().printOutput("Loading "+containersToProvision + " new containers");
+            getContainerManager().provisionContainers(containersToProvision);
+        }
+
+
+
     }
 
     private void loadConfig() {
@@ -76,6 +110,80 @@ public class ElasticBalancer {
         } else {
             throw new InvalidParameterException("EB_MAX_PROVISION_CONTAINERS parameter does not exist");
         }
+
+        if(config.EB_TOLERANCE_THRESHOLD > 0) {
+            this.EB_TOLERANCE_THRESHOLD = config.EB_TOLERANCE_THRESHOLD;
+        } else {
+            throw new InvalidParameterException("EB_TOLERANCE_THRESHOLD parameter does not exist");
+        }
+    }
+
+    /**
+     * Calculates the balancer score, this score will be the decision to scale up or down containers
+     * @return Integer
+     */
+    private Integer calculateBalancerScore() {
+        try {
+            Integer workersQueuedJobs = ElasticBalancer.getInstance().workers_queued_jobs.get();
+            Integer runningWorkers = ElasticBalancer.getInstance().workers.get();
+
+            Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkers * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
+            Debugger.getInstance().debug("Calculated score without config values: " + balanceScore,this.getClass());
+
+
+            Integer maxContainers = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
+            Integer minContainers = ConfigManager.getConfig().DOCKER_MIN_CONTAINERS;
+            Integer maxBootsInLoop = ConfigManager.getConfig().DOCKER_MAX_BOOTS_IN_LOOP;
+            Integer maxShutdownsInLoop = ConfigManager.getConfig().DOCKER_MAX_SHUTDOWNS_IN_LOOP;
+            Integer runningContainers = this.getContainerManager().getRunningContainers().size();
+            Integer containersAfterBalance = 0;
+            Boolean isRemoveContainers = false;
+
+            if(runningContainers.intValue() != runningWorkers.intValue()) {
+                Debugger.getInstance().print("Workers & Containers doesn't match [ "+runningWorkers+" Workers vs "+runningContainers+" Containers ]",this.getClass());
+            }
+
+            if(balanceScore < 0) {
+                isRemoveContainers = true;
+                Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + balanceScore + " score = " + (runningWorkers - Math.abs(balanceScore)),this.getClass());
+                if((runningWorkers - Math.abs(balanceScore)) < minContainers) containersAfterBalance = minContainers;
+            } else {
+                Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + balanceScore + " score = " + (runningWorkers + balanceScore),this.getClass());
+                if((runningWorkers + balanceScore) > maxContainers) containersAfterBalance = maxContainers;
+            }
+
+            if(isRemoveContainers) {
+                Debugger.getInstance().print("Killing " + (runningContainers - containersAfterBalance) + " containers, left " + containersAfterBalance + " containers",this.getClass());
+            } else {
+                Debugger.getInstance().print("Adding " + (containersAfterBalance - runningContainers) + " containers, left " + containersAfterBalance + " containers",this.getClass());
+            }
+            return containersAfterBalance;
+
+        } catch(Exception e) {
+            e.printStackTrace();
+
+            // If we have any exception return the min number of containers set
+            return ConfigManager.getConfig().DOCKER_MIN_CONTAINERS;
+        }
+
+
+    }
+
+    private void balance() {
+        Debugger.getInstance().print("Calculating balancer score...",this.getClass());
+        Integer balanceScore = calculateBalancerScore();
+    }
+
+    /**
+     * Start's the Balancer score calculator & container scale up/down runnable
+     */
+    private void startBalancerRunnable() {
+        balancerRunnable = new Runnable() {
+            public void run() {
+                balance();
+            }
+        };
+        balancerThreadPool.scheduleAtFixedRate(balancerRunnable, this.balancerRunnableTimeBeforeStart, this.balancerRunnableTimeInterval, TimeUnit.SECONDS);
     }
 
     public ContainerManager getContainerManager() {

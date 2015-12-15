@@ -26,16 +26,10 @@ public class QueueObserver extends AbstractObserver {
         StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
 
         ElasticBalancer.getInstance().workers.set(statusMessage.workers);
-        ElasticBalancer.getInstance().trackers.set(statusMessage.trackers);
-        ElasticBalancer.getInstance().importers.set(statusMessage.importers);
-        ElasticBalancer.getInstance().importers_queued_jobs.set(statusMessage.importers_queued_jobs);
         ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
 
         System.out.println(LOG_PREPEND + "\t"
                 + ElasticBalancer.getInstance().workers + " [WORKERS] \t"
-                + ElasticBalancer.getInstance().trackers + " [TRACKERS] \t"
-                + ElasticBalancer.getInstance().importers + " [IMPORTERS] \t"
-                + ElasticBalancer.getInstance().importers_queued_jobs + " [IMPORTER_QUEUED_JOBS] \t"
                 + ElasticBalancer.getInstance().workers_queued_jobs + " [WORKER_QUEUED_JOBS] \t"
         );
     }
@@ -49,17 +43,15 @@ public class QueueObserver extends AbstractObserver {
 
         try {
             URL url = new URL(QUEUE_STATUS_URL);
-            try {
-                String output = "";
-                BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
-                for (String line; (line = reader.readLine()) != null;) {
-                    output += line;
-                }
-                return output;
-            } catch (IOException e) {
-                e.printStackTrace();
+            String output = "";
+            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
+            for (String line; (line = reader.readLine()) != null;) {
+                output += line;
             }
+            return output;
         } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
