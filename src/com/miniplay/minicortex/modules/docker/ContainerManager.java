@@ -143,9 +143,9 @@ public class ContainerManager {
      * Provision a new container into the Docker cluster
      * @param containerName String
      */
-    public void provisionContainer(String containerName) {
+    public void provisionContainer(String containerName, Boolean isLastProvisionedMachine) {
         try {
-            Debugger.getInstance().printOutput("Provisioning new container ["+containerName+"]");
+            Debugger.getInstance().printOutput("Provisioning new container #"+containerName);
             String command;
             if(this.config.AMAZONEC2_AMI != null) {
                 command = "docker-machine create " +
@@ -180,9 +180,14 @@ public class ContainerManager {
                         containerName;
             }
 
-            System.out.println(command);
+            Debugger.getInstance().debug("Machine provision command: " + command, this.getClass());
             String creationOutput = CommandExecutor.getInstance().execute(command);
-            System.out.println(creationOutput);
+            if(isLastProvisionedMachine) {
+                Debugger.getInstance().debug("Finished last provisioned machine...", this.getClass());
+                this.elasticBalancer.isProvisioning.set(false);
+            }
+            Debugger.getInstance().debug("Machine provision creation output: "+creationOutput, this.getClass());
+
         } catch (IOException e) {
             System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
         }
@@ -254,21 +259,17 @@ public class ContainerManager {
     }
 
     public void provisionContainers(Integer containersToProvision) {
-
+        this.elasticBalancer.isProvisioning.set(true);
         for(int i = 1; i<=containersToProvision; i++) {
             Debugger.getInstance().printOutput("Provisioning container "+i+"/"+containersToProvision);
-            try {
-                // Generate secure random string
-                SecureRandom random = new SecureRandom();
-                String randomString =  new BigInteger(130, random).toString(32);
-
-                // Privision container with random name
-                String containerName = ConfigManager.getConfig().DOCKER_CONTAINER_HOSTNAME_BASENAME + randomString.substring(2,7);
-                this.provisionContainer(containerName);
-
-            } catch (Exception e) {
-                e.printStackTrace();
+            ProvisionThread provisionThread;
+            if(i == containersToProvision) {
+                provisionThread= new ProvisionThread("ProvisionThread #" + i, true);
+            } else {
+                provisionThread= new ProvisionThread("ProvisionThread #" + i);
             }
+            provisionThread.start();
+
         }
     }
 }

@@ -6,12 +6,14 @@ import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.docker.ContainerManager;
 import com.miniplay.minicortex.server.CortexServer;
 
+import javax.swing.plaf.basic.BasicTreeUI;
 import java.security.InvalidParameterException;
 import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -25,6 +27,7 @@ public class ElasticBalancer {
     public Integer EB_MAX_PROVISION_CONTAINERS = 0;
     public Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
+    public AtomicBoolean isProvisioning = new AtomicBoolean(false);
 
     /* Workers status */
     public AtomicInteger workers = new AtomicInteger();
@@ -59,7 +62,7 @@ public class ElasticBalancer {
     /**
      * ElasticBalancer constructor
      */
-    public ElasticBalancer() {
+    private ElasticBalancer() {
         Debugger.getInstance().printOutput("Loading Elastic Balancer...");
 
         // Load & validate config
@@ -68,18 +71,18 @@ public class ElasticBalancer {
         // Load Docker config
         this.containerManager = new ContainerManager(this);
 
-        // Provision containers if needed (config EB_MAX_PROVISION_CONTAINERS)
-        this.triggerProvisionContainers();
-
         // Start Balancer runnable
         this.startBalancerRunnable();
 
         // All OK!
         this.isLoaded = true;
+
         Debugger.getInstance().printOutput("Elastic Balancer Loaded OK");
+
     }
 
-    private void triggerProvisionContainers() {
+    public void triggerProvisionContainers() {
+        Debugger.getInstance().printOutput("Triggered Container Provision...");
         // Force first manual containers load
         getContainerManager().loadContainers();
         Integer currentContainers = getContainerManager().getAllContainers().size();
@@ -124,8 +127,8 @@ public class ElasticBalancer {
      */
     private Integer calculateBalancerScore() {
         try {
-            Integer workersQueuedJobs = ElasticBalancer.getInstance().workers_queued_jobs.get();
-            Integer runningWorkers = ElasticBalancer.getInstance().workers.get();
+            Integer workersQueuedJobs = this.workers_queued_jobs.get();
+            Integer runningWorkers = this.workers.get();
 
             Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkers * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
             Debugger.getInstance().debug("Calculated score without config values: " + balanceScore,this.getClass());
@@ -169,9 +172,16 @@ public class ElasticBalancer {
 
     }
 
+    /**
+     * Recalculate containers needed for CortexServer at this moment
+     */
     private void balance() {
-        Debugger.getInstance().print("Calculating balancer score...",this.getClass());
-        Integer balanceScore = calculateBalancerScore();
+        if(!this.isProvisioning.get()) {
+            Debugger.getInstance().print("Calculating balancer score...",this.getClass());
+            Integer balanceScore = calculateBalancerScore();
+        } else {
+            Debugger.getInstance().printOutput("Provisioning machines... ElasticBalance PAUSED!");
+        }
     }
 
     /**
@@ -186,6 +196,9 @@ public class ElasticBalancer {
         balancerThreadPool.scheduleAtFixedRate(balancerRunnable, this.balancerRunnableTimeBeforeStart, this.balancerRunnableTimeInterval, TimeUnit.SECONDS);
     }
 
+    /**
+     * @return ContainerManager
+     */
     public ContainerManager getContainerManager() {
         return containerManager;
     }

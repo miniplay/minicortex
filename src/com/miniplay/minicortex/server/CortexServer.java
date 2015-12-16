@@ -9,6 +9,7 @@ import com.miniplay.minicortex.lib.ClassHelpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.observers.ObserverManager;
+import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -70,6 +71,9 @@ public class CortexServer {
             throw new Exception("Elastic Balancer not loaded!");
         }
 
+        // Provision containers if needed
+        this.elasticBalancer.triggerProvisionContainers();
+
         // All OK, Run executors!
         Debugger.getInstance().printOutput(" Server started!");
         System.out.println("\n");
@@ -96,5 +100,4 @@ public class CortexServer {
         observerManager.startRunnables();
 
     }
-
 }
