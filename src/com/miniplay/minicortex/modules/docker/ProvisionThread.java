@@ -2,6 +2,7 @@ package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.ConfigManager;
+import com.miniplay.minicortex.exceptions.InvalidProvisionParams;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 
 import java.math.BigInteger;
@@ -14,23 +15,12 @@ import java.security.SecureRandom;
  */
 public class ProvisionThread extends Thread {
 
-    public Boolean isLastProvisionedMachine = false;
-
     public ProvisionThread (String s) {
         super(s);
     }
 
-    public ProvisionThread (String s, Boolean isLastProvisionedMachine) {
-        super(s);
-        this.isLastProvisionedMachine = isLastProvisionedMachine;
-    }
-
     public void run() {
         System.out.println("Running "+ getName());
-
-        if(this.isLastProvisionedMachine) {
-            Debugger.getInstance().debug("Provisioning last machine...",this.getClass());
-        }
 
         try {
             // Generate secure random string
@@ -39,8 +29,10 @@ public class ProvisionThread extends Thread {
 
             // Provision container with random name
             String containerName = ConfigManager.getConfig().DOCKER_CONTAINER_HOSTNAME_BASENAME + randomString.substring(2,7);
-            ElasticBalancer.getInstance().getContainerManager().provisionContainer(containerName,this.isLastProvisionedMachine);
+            ElasticBalancer.getInstance().getContainerManager().provisionContainer(containerName);
 
+        } catch (InvalidProvisionParams e) {
+            Debugger.getInstance().print("Error provisioning machine, caused by: " + e.getMessage(), this.getClass());
         } catch (Exception e) {
             e.printStackTrace();
         }

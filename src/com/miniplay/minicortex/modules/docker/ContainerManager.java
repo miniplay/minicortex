@@ -4,6 +4,7 @@ import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
+import com.miniplay.minicortex.exceptions.InvalidProvisionParams;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.server.CortexServer;
 
@@ -15,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -143,49 +145,87 @@ public class ContainerManager {
      * Provision a new container into the Docker cluster
      * @param containerName String
      */
-    public void provisionContainer(String containerName, Boolean isLastProvisionedMachine) {
+    public void provisionContainer(String containerName) throws InvalidProvisionParams {
         try {
             Debugger.getInstance().printOutput("Provisioning new container #"+containerName);
-            String command;
-            if(this.config.AMAZONEC2_AMI != null) {
-                command = "docker-machine create " +
-                        "--driver amazonec2 " +
-                        "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' " +
-                        "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' " +
-                        "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' " +
-                        "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' " +
-                        "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' " +
-                        "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' " +
-                        "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' " +
-                        "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' " +
-                        "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' " +
-                        "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' " +
-                        //"--amazonec2-use-private-address " +
-                        //"--amazonec2-private-address-only '"+String.valueOf(this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY)+"' " +
-                        containerName;
+            StringBuilder command = new StringBuilder();
+
+            command.append("docker-machine create ");
+            command.append("--driver amazonec2 ");
+
+            if(this.config.AMAZONEC2_REGION != null) {
+                String commandPart = "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' ";
+                command.append(commandPart);
             } else {
-                command = "docker-machine create " +
-                        "--driver amazonec2 " +
-                        "--amazonec2-region '"+this.config.AMAZONEC2_REGION+"' " +
-                        "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' " +
-                        "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' " +
-                        "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' " +
-                        "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' " +
-                        "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' " +
-                        "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' " +
-                        "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' " +
-                        "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' " +
-                        //"--amazonec2-use-private-address " +
-                        //"--amazonec2-private-address-only '"+String.valueOf(this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY)+"' " +
-                        containerName;
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_REGION provided");
             }
 
-            Debugger.getInstance().debug("Machine provision command: " + command, this.getClass());
-            String creationOutput = CommandExecutor.getInstance().execute(command);
-            if(isLastProvisionedMachine) {
-                Debugger.getInstance().debug("Finished last provisioned machine...", this.getClass());
-                this.elasticBalancer.isProvisioning.set(false);
+            if(this.config.AMAZONEC2_ACCESS_KEY != null) {
+                String commandPart = "--amazonec2-access-key '"+this.config.AMAZONEC2_ACCESS_KEY+"' ";
+                command.append(commandPart);
+            } else {
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_ACCESS_KEY provided");
             }
+
+            if(this.config.AMAZONEC2_SECRET_KEY != null) {
+                String commandPart = "--amazonec2-secret-key '"+this.config.AMAZONEC2_SECRET_KEY+"' ";
+                command.append(commandPart);
+            } else {
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_SECRET_KEY provided");
+            }
+
+            if(this.config.AMAZONEC2_VPC_ID != null) {
+                String commandPart = "--amazonec2-vpc-id '"+this.config.AMAZONEC2_VPC_ID+"' ";
+                command.append(commandPart);
+            } else {
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_VPC_ID provided");
+            }
+
+            if(this.config.AMAZONEC2_ZONE != null) {
+                String commandPart = "--amazonec2-zone '"+this.config.AMAZONEC2_ZONE+"' ";
+                command.append(commandPart);
+            } else {
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_ZONE provided");
+            }
+
+            if(this.config.AMAZONEC2_INSTANCE_TYPE != null) {
+                String commandPart = "--amazonec2-instance-type '"+this.config.AMAZONEC2_INSTANCE_TYPE+"' ";
+                command.append(commandPart);
+            } else {
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_INSTANCE_TYPE provided");
+            }
+
+            if(this.config.AMAZONEC2_SECURITY_GROUP != null) {
+                String commandPart = "--amazonec2-security-group '"+this.config.AMAZONEC2_SECURITY_GROUP+"' ";
+                command.append(commandPart);
+            } else {
+                throw new InvalidProvisionParams("Invalid AMAZONEC2_SECURITY_GROUP provided");
+            }
+
+            if(this.config.AMAZONEC2_SSH_USER != null) {
+                String commandPart = "--amazonec2-ssh-user '"+this.config.AMAZONEC2_SSH_USER+"' ";
+                command.append(commandPart);
+            }
+
+            if(this.config.AMAZONEC2_AMI != null) {
+                String commandPart = "--amazonec2-ami '"+this.config.AMAZONEC2_AMI+"' ";
+                command.append(commandPart);
+            }
+
+            if(this.config.AMAZONEC2_SUBNET_ID != null) {
+                String commandPart = "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' ";
+                command.append(commandPart);
+            }
+//
+            if(this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY) {
+                String commandPart = "--amazonec2-private-address-only ";
+                command.append(commandPart);
+            }
+
+            command.append(containerName);
+
+            Debugger.getInstance().debug("Machine provision command: " + command, this.getClass());
+            String creationOutput = CommandExecutor.getInstance().execute(command.toString());
             Debugger.getInstance().debug("Machine provision creation output: "+creationOutput, this.getClass());
 
         } catch (IOException e) {
@@ -259,17 +299,59 @@ public class ContainerManager {
     }
 
     public void provisionContainers(Integer containersToProvision) {
-        this.elasticBalancer.isProvisioning.set(true);
         for(int i = 1; i<=containersToProvision; i++) {
             Debugger.getInstance().printOutput("Provisioning container "+i+"/"+containersToProvision);
-            ProvisionThread provisionThread;
-            if(i == containersToProvision) {
-                provisionThread= new ProvisionThread("ProvisionThread #" + i, true);
-            } else {
-                provisionThread= new ProvisionThread("ProvisionThread #" + i);
-            }
+            ProvisionThread provisionThread = new ProvisionThread("ProvisionThread #" + i);
             provisionThread.start();
 
         }
+    }
+
+    public void killContainers(Integer containersToKill) {
+        for(int i = 1; i<=containersToKill; i++) {
+            Debugger.getInstance().printOutput("Killing container "+i+"/"+containersToKill);
+            this.killRandomContainer();
+
+        }
+    }
+
+    public void startContainers(Integer containersToStart) {
+        for(int i = 1; i<=containersToStart; i++) {
+            Debugger.getInstance().printOutput("Starting container "+i+"/"+containersToStart);
+            this.startRandomContainer();
+
+        }
+    }
+
+    private void killRandomContainer() {
+        Container containerToKill = this.getRandomContainer(Container.STATUS_RUNNING);
+        containerToKill.kill();
+    }
+
+    private void startRandomContainer() {
+        Container containerToStart = this.getRandomContainer(Container.STATUS_STOPPED);
+        containerToStart.start();
+    }
+
+    /**
+     * Retrieve a random registered container
+     * @param state String
+     * @return Container
+     */
+    private Container getRandomContainer(String state) {
+        Random r = new Random();
+        ArrayList<Container> containers;
+        if(state.equals(Container.STATUS_STOPPED)) {
+            containers = this.getStoppedContainers();
+        } else if(state.equals(Container.STATUS_RUNNING)) {
+            containers = this.getRunningContainers();
+        } else {
+            containers = this.getAllContainers();
+        }
+        return containers.get(r.nextInt(containers.size()));
+    }
+
+    public Config getConfig() {
+        return config;
     }
 }

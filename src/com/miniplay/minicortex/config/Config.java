@@ -41,6 +41,9 @@ public class Config {
     public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
     public Boolean DOCKER_TERMINATE_MODE = false;
     public String DOCKER_CONTAINER_HOSTNAME_BASENAME = "worker-";
+    public String DOCKER_KILL_MODE = null;
+    public String DOCKER_SOFT_KILL_PATH = null;
+    public String DOCKER_SOFT_KILL_FILENAME = null;
 
     /* AMAZON EC2 DOCKER DRIVER */
     public String AMAZONEC2_REGION = "";
@@ -53,7 +56,6 @@ public class Config {
     public String AMAZONEC2_AMI = "";
     public String AMAZONEC2_SUBNET_ID = "";
     public String AMAZONEC2_SECURITY_GROUP = "";
-    public Boolean AMAZONEC2_USE_PRIVATE_ADDRESS = true;
     public Boolean AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
 
     /* ELASTIC BALANCER */

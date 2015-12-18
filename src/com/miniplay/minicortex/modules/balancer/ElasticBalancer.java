@@ -156,10 +156,17 @@ public class ElasticBalancer {
             }
 
             if(isRemoveContainers) {
-                Debugger.getInstance().print("Killing " + (runningContainers - containersAfterBalance) + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                // TODO: Check DOCKER_MAX_SHUTDOWNS_IN_LOOP!!
+                Integer containersToKill = runningContainers - containersAfterBalance;
+                Debugger.getInstance().print("Killing " + containersToKill + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                this.getContainerManager().killContainers(containersToKill);
             } else {
-                Debugger.getInstance().print("Adding " + (containersAfterBalance - runningContainers) + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                // TODO: DOCKER_MAX_BOOTS_IN_LOOP
+                Integer containersToStart = containersAfterBalance - runningContainers;
+                Debugger.getInstance().print("Adding " + containersToStart + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                this.getContainerManager().startContainers(containersToStart);
             }
+
             return containersAfterBalance;
 
         } catch(Exception e) {
@@ -176,11 +183,13 @@ public class ElasticBalancer {
      * Recalculate containers needed for CortexServer at this moment
      */
     private void balance() {
-        if(!this.isProvisioning.get()) {
+        Integer registeredContainers = this.getContainerManager().getAllContainers().size();
+        Integer minContainers = ConfigManager.getConfig().DOCKER_MIN_CONTAINERS;
+        if(registeredContainers < minContainers) {
+            Debugger.getInstance().printOutput("Registered containers ("+registeredContainers+") don't reach the minimum ("+minContainers+"), ElasticBalance PAUSED!");
+        } else {
             Debugger.getInstance().print("Calculating balancer score...",this.getClass());
             Integer balanceScore = calculateBalancerScore();
-        } else {
-            Debugger.getInstance().printOutput("Provisioning machines... ElasticBalance PAUSED!");
         }
     }
 

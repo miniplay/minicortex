@@ -2,6 +2,8 @@ package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
+import com.miniplay.minicortex.config.ConfigManager;
+import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 
 import java.io.IOException;
 
@@ -51,25 +53,58 @@ public class Container {
      * Container actions------------------------------------------------------------------------------------------------
      */
 
+
     /**
      * Start container
      */
     public void start() {
-        this.changeState(this.ACTION_START);
+        Debugger.getInstance().print("Container #" + this.getName() + " is going to start...",this.getClass());
+        this.changeState(ACTION_START);
     }
 
     /**
      * Kill container (stop)
      */
     public void kill() {
-        this.changeState(this.ACTION_KILL);
+        String killMode = ElasticBalancer.getInstance().getContainerManager().getConfig().DOCKER_KILL_MODE;
+        Debugger.getInstance().print("Container #" + this.getName() + " is being ["+killMode+"] killed",this.getClass());
+        if(killMode.toUpperCase().equals("SOFT")) {
+            this.softKill();
+        } else {
+            // Hard kill the machine, the worker would need to handle the shutdown sigterm
+            this.changeState(ACTION_KILL);
+        }
+    }
+
+    /**
+     * Soft KILL a container (this touche's a file into the container and the worker would autokill itself when he can.
+     */
+    private void softKill() {
+        String directoryPath = ElasticBalancer.getInstance().getContainerManager().getConfig().DOCKER_SOFT_KILL_PATH;
+        String dieFileName = ElasticBalancer.getInstance().getContainerManager().getConfig().DOCKER_SOFT_KILL_FILENAME;
+
+        // Check if directory includes / at the end, if not append it
+        String lastCharacterOfPath = directoryPath.substring(directoryPath.length() - 1);
+        if(!lastCharacterOfPath.equals("/")) {
+            directoryPath += "/";
+        }
+
+        try {
+            // Create directory if it doesn't exist
+            CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " mkdir -p " + directoryPath);
+
+            // Touch file into directory
+            CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " touch " + directoryPath + dieFileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Remove container (also terminates the instance in AWS)
      */
     public void remove() {
-        this.changeState(this.ACTION_RM);
+        this.changeState(ACTION_RM);
     }
 
     /**
