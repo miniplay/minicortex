@@ -12,6 +12,7 @@ import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ElasticBalancer {
 
     /* Elastic Balancer Conf */
-    public Boolean EB_ALLOW_PRIVISION_CONTAINERS = false;
+    public Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
     public Integer EB_MAX_PROVISION_CONTAINERS = 0;
     public Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
@@ -102,10 +103,11 @@ public class ElasticBalancer {
 
     private void loadConfig() {
         Config config = ConfigManager.getConfig();
-        if(config.EB_ALLOW_PRIVISION_CONTAINERS) {
-            this.EB_ALLOW_PRIVISION_CONTAINERS = config.EB_ALLOW_PRIVISION_CONTAINERS;
+        System.out.println(config.getElasticBalancerConfig());
+        if(config.EB_ALLOW_PROVISION_CONTAINERS) {
+            this.EB_ALLOW_PROVISION_CONTAINERS = config.EB_ALLOW_PROVISION_CONTAINERS;
         } else {
-            throw new InvalidParameterException("EB_ALLOW_PRIVISION_CONTAINERS parameter does not exist");
+            throw new InvalidParameterException("EB_ALLOW_PROVISION_CONTAINERS parameter does not exist");
         }
 
         if(config.EB_MAX_PROVISION_CONTAINERS > 0) {

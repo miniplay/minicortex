@@ -86,9 +86,7 @@ public class CortexServer {
     private void runObserverRunnables() {
         // Iterate through Custom Observers file
         ArrayList<String> observerNames = ClassHelpers.getClassNamesFromPackage(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME);
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        ArrayList<Runnable> loadedRunnables = new ArrayList<Runnable>();
-
+        System.out.println("CLASS NAMES IN PACKAGE: " + observerNames);
         for (String observerClassName : observerNames) {
             try{
                 AbstractObserver loadedObserver = ClassHelpers.instantiateClass(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME + "." + observerClassName, AbstractObserver.class);

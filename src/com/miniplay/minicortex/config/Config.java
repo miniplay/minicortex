@@ -59,7 +59,7 @@ public class Config {
     public Boolean AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
 
     /* ELASTIC BALANCER */
-    public Boolean EB_ALLOW_PRIVISION_CONTAINERS = true;
+    public Boolean EB_ALLOW_PROVISION_CONTAINERS = true;
     public Integer EB_MAX_PROVISION_CONTAINERS = 5;
     public Integer EB_TOLERANCE_THRESHOLD = 3;
 
