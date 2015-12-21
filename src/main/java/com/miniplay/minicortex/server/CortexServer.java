@@ -9,7 +9,6 @@ import com.miniplay.minicortex.lib.ClassHelpers;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.observers.ObserverManager;
-import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
 
 import java.io.IOException;
 import java.util.ArrayList;

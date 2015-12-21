@@ -14,11 +14,16 @@ public class ConfigBeacon {
 
     public File getConfigFile(EnvironmentManager environment) {
         URL url;
+        String fileName = new String();
         if(environment.isDev()) {
+            fileName = Config.CUSTOM_CONFIG_FILE_NAME_DEV;
             url = getClass().getResource(Config.CUSTOM_CONFIG_FILE_NAME_DEV);
         } else {
+            fileName = Config.CUSTOM_CONFIG_FILE_NAME;
             url = getClass().getResource(Config.CUSTOM_CONFIG_FILE_NAME);
         }
-        return new File(url.getPath());
+
+        //return new File(url.getPath());
+        return new File("/etc/minicortex/" + fileName);
     }
 }

@@ -83,22 +83,25 @@ public class ElasticBalancer {
     }
 
     public void triggerProvisionContainers() {
-        Debugger.getInstance().printOutput("Triggered Container Provision...");
-        // Force first manual containers load
-        getContainerManager().loadContainers();
-        Integer currentContainers = getContainerManager().getAllContainers().size();
-        Integer maxContainers = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
+        if(this.EB_ALLOW_PROVISION_CONTAINERS) {
+            Debugger.getInstance().printOutput("Triggered Container Provision...");
+            // Force first manual containers load
+            getContainerManager().loadContainers();
+            Integer currentContainers = getContainerManager().getAllContainers().size();
+            Integer maxContainers = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
 
-        Debugger.getInstance().printOutput("Current containers " + currentContainers + ", Max containers " + maxContainers);
+            Debugger.getInstance().printOutput("Current containers " + currentContainers + ", Max containers " + maxContainers);
 
-        if(maxContainers > currentContainers) {
-            Integer containersToProvision = maxContainers - currentContainers;
-            Debugger.getInstance().printOutput("Loading "+containersToProvision + " new containers");
-            getContainerManager().provisionContainers(containersToProvision);
+            if(maxContainers > currentContainers) {
+                Integer containersToProvision = maxContainers - currentContainers;
+                if(containersToProvision > this.EB_MAX_PROVISION_CONTAINERS) {
+                    Debugger.getInstance().printOutput("MAX provision containers reached!");
+                    containersToProvision = this.EB_MAX_PROVISION_CONTAINERS;
+                }
+                Debugger.getInstance().printOutput("Loading "+containersToProvision + " new containers");
+                getContainerManager().provisionContainers(containersToProvision);
+            }
         }
-
-
-
     }
 
     private void loadConfig() {
