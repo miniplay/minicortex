@@ -94,9 +94,9 @@ public class ElasticBalancer {
 
             if(maxContainers > currentContainers) {
                 Integer containersToProvision = maxContainers - currentContainers;
-                if(containersToProvision > this.EB_MAX_PROVISION_CONTAINERS) {
+                if(containersToProvision > ConfigManager.getConfig().DOCKER_MAX_CONTAINERS) {
                     Debugger.getInstance().printOutput("MAX provision containers reached!");
-                    containersToProvision = this.EB_MAX_PROVISION_CONTAINERS;
+                    containersToProvision = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
                 }
                 Debugger.getInstance().printOutput("Loading "+containersToProvision + " new containers");
                 getContainerManager().provisionContainers(containersToProvision);
@@ -111,12 +111,6 @@ public class ElasticBalancer {
             this.EB_ALLOW_PROVISION_CONTAINERS = config.EB_ALLOW_PROVISION_CONTAINERS;
         } else {
             throw new InvalidParameterException("EB_ALLOW_PROVISION_CONTAINERS parameter does not exist");
-        }
-
-        if(config.EB_MAX_PROVISION_CONTAINERS > 0) {
-            this.EB_MAX_PROVISION_CONTAINERS = config.EB_MAX_PROVISION_CONTAINERS;
-        } else {
-            throw new InvalidParameterException("EB_MAX_PROVISION_CONTAINERS parameter does not exist");
         }
 
         if(config.EB_TOLERANCE_THRESHOLD > 0) {

@@ -39,7 +39,6 @@ public class Config {
     public Integer DOCKER_MAX_CONTAINERS = 10;
     public Integer DOCKER_MAX_BOOTS_IN_LOOP = null;
     public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
-    public Boolean DOCKER_TERMINATE_MODE = false;
     public String DOCKER_CONTAINER_HOSTNAME_BASENAME = "worker-";
     public String DOCKER_KILL_MODE = null;
     public String DOCKER_SOFT_KILL_PATH = null;
@@ -60,16 +59,11 @@ public class Config {
 
     /* ELASTIC BALANCER */
     public Boolean EB_ALLOW_PROVISION_CONTAINERS = true;
-    public Integer EB_MAX_PROVISION_CONTAINERS = 5;
     public Integer EB_TOLERANCE_THRESHOLD = 3;
 
     /* STATSD */
     public String STATSD_HOST = "";
     public Integer STATSD_PORT = 8125;
-
-    /* GEARMAN */
-    public String GEARMAN_HOST = "";
-    public Integer GEARMAN_PORT = 4730;
 
 
     /**************
