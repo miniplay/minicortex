@@ -91,10 +91,10 @@ public class Container {
 
         try {
             // Create directory if it doesn't exist
-            CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " mkdir -p " + directoryPath);
+            CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " \"mkdir -p " + directoryPath + "; chmod 777 " +directoryPath+ "\"");
 
             // Touch file into directory
-            CommandExecutor.getInstance().execute("docker-machine ssh \"" + this.getName() + " touch " + directoryPath + dieFileName + "; chmod 777 " + directoryPath + dieFileName +"\"");
+            CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " \" touch " + directoryPath + dieFileName + "; chmod 777 " + directoryPath + dieFileName +"\"");
         } catch (IOException e) {
             e.printStackTrace();
         }
