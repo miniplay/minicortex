@@ -3,6 +3,7 @@ package com.miniplay.minicortex.config;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -132,12 +133,14 @@ public class Config {
                 throw new Exception("Config integrity check didn't pass, Halting");
             }
 
+        } catch (FileNotFoundException e) {
+            e.getMessage();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         if (this.isDebug()) {
-            System.out.println("[" + this.getClass() + "]: New config initialized (Environment: " + this.environment.getEnvironmentName() + ")");
+            System.out.println("[" + this.getClass() + "]: New config initialized (Environment: " + this.environment.getConfigPath() + ")");
         }
 
     }

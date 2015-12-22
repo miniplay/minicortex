@@ -19,13 +19,9 @@ public class RunServer {
         // Handle environment arg
         EnvironmentManager env = null;
         if (args.length>0) {
-            try {
-                env = new EnvironmentManager(args[0]);
-            } catch (Exception e) {
-                Debugger.getInstance().printOutput("Invalid environment: "+ args[2] + " using default [dev] ....");
-                env = new EnvironmentManager("dev");
-                printCLISyntax();
-            }
+            env = new EnvironmentManager(args[0]);
+        } else {
+            env = new EnvironmentManager();
         }
 
         // Load service config

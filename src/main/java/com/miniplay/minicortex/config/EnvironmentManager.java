@@ -1,41 +1,51 @@
 package com.miniplay.minicortex.config;
 
+import java.io.File;
+import java.io.InterruptedIOException;
+
 public class EnvironmentManager {
         
     protected String[] rawArgs;
 
-    protected String environment = "dev";
+    protected String configPath = null;
 
-    public EnvironmentManager(String env) throws InterruptedException {
-       if (env.equals("prod")) {
-           environment="prod";
-       }
-       // System.out.println("> Environment Initialized: "+environment);
+    protected static final String DEFAULT_CFG_PATH = "config.yml";
+
+    /**
+     * @param configPath String
+     * @throws InterruptedException
+     */
+    public EnvironmentManager(String configPath) throws InterruptedException {
+        if(this.validateConfigPath(configPath)) {
+            this.configPath = configPath;
+        } else {
+            throw new InterruptedException("Config file " + configPath + " not valid!!");
+        }
     }
 
-    public EnvironmentManager(String[] args) throws InterruptedException {
-       if (args==null) args = new String[0];
-       rawArgs = args;
-       if (args.length>0 && args[0].equals("prod")) {
-           environment="prod";
-       }
-       // System.out.println("> Environment Initialized: "+environment);
+    public EnvironmentManager() throws InterruptedException {
+        String workingDir = System.getProperty("user.dir");
+        if(this.validateConfigPath(workingDir + DEFAULT_CFG_PATH)) {
+            this.configPath = workingDir + DEFAULT_CFG_PATH;
+        } else {
+            throw new InterruptedException("Config file " + workingDir + DEFAULT_CFG_PATH + " not valid!!");
+        }
     }
 
-    public String get() {
-       return environment;
+    /**
+     * @return String
+     */
+    public String getConfigPath() {
+        return this.configPath;
     }
 
-    public boolean isDev() {
-       return !isProd();
-    }
-
-    public boolean isProd() {
-       return environment.equals("prod");
-    }
-
-    public String getEnvironmentName() {
-        return environment;
+    /**
+     * @param configPath String
+     * @return Boolean
+     */
+    public Boolean validateConfigPath(String configPath) {
+        File f = new File(configPath);
+        return f.exists() && !f.isDirectory();
     }
 
 }

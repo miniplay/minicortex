@@ -284,7 +284,7 @@ public class ContainerManager {
 
     /**
      * Get containers by state
-     * @param state String
+     * @param state Stringr
      * @return ArrayList
      */
     private ArrayList<Container> getContainers(String state) {
