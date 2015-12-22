@@ -9,7 +9,7 @@ public class EnvironmentManager {
 
     protected String configPath = null;
 
-    protected static final String DEFAULT_CFG_PATH = "config.yml";
+    protected static final String DEFAULT_CFG_PATH = "config_example.yml";
 
     /**
      * @param configPath String

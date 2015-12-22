@@ -37,8 +37,8 @@ public class ElasticBalancer {
     /* Elastic balancer config */
     public ScheduledExecutorService balancerThreadPool = Executors.newScheduledThreadPool(2);
     Runnable balancerRunnable = null;
-    public Long balancerRunnableTimeBeforeStart = 5L;
-    public Long balancerRunnableTimeInterval = 5L;
+    public Long balancerRunnableTimeBeforeStart = 15L;
+    public Long balancerRunnableTimeInterval = 60L;
 
     /* Modules */
     private ContainerManager containerManager = null;

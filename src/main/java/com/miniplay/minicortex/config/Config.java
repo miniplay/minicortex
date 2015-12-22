@@ -24,8 +24,6 @@ public class Config {
     /* MiniCortex */
     private String version = "0.0.1";
     public String CUSTOM_OBSERVERS_PACKAGE_NAME = "com.miniplay.custom.observers";
-    public static String CUSTOM_CONFIG_FILE_NAME = "config.yml";
-    public static String CUSTOM_CONFIG_FILE_NAME_DEV = "config_dev.yml";
 
     /***************
      * CUSTOM CONFIG

@@ -35,8 +35,8 @@ public class QueueObserver extends AbstractObserver {
     }
 
     public void setConfig () {
-        this.secsSpanBeforeStart = 2L;
-        this.secsIntervalSpan = 4L;
+        this.secsSpanBeforeStart = 5L;
+        this.secsIntervalSpan = 60L;
     }
 
     public String fetch() {

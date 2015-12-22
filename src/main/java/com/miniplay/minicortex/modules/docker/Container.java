@@ -94,7 +94,7 @@ public class Container {
             CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " mkdir -p " + directoryPath);
 
             // Touch file into directory
-            CommandExecutor.getInstance().execute("docker-machine ssh " + this.getName() + " touch " + directoryPath + dieFileName);
+            CommandExecutor.getInstance().execute("docker-machine ssh \"" + this.getName() + " touch " + directoryPath + dieFileName + "; chmod 777 " + directoryPath + dieFileName +"\"");
         } catch (IOException e) {
             e.printStackTrace();
         }

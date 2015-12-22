@@ -32,8 +32,8 @@ public class ContainerObserver extends AbstractObserver {
     }
 
     public void setConfig () {
-        this.secsSpanBeforeStart = 3L;
-        this.secsIntervalSpan = 4L;
+        this.secsSpanBeforeStart = 10L;
+        this.secsIntervalSpan = 60L;
     }
     
 }
