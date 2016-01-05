@@ -35,8 +35,8 @@ public class QueueObserver extends AbstractObserver {
 
         if(ElasticBalancer.getInstance().getStatsd() != null) {
             ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.queue.executions");
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.queue.workers", statusMessage.workers);
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.queue.workers_queued_jobs", statusMessage.workers_queued_jobs);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.queue.workers", statusMessage.workers);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.queue.workers_queued_jobs", statusMessage.workers_queued_jobs);
         }
     }
 

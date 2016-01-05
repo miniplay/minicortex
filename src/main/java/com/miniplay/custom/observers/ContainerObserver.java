@@ -33,11 +33,11 @@ public class ContainerObserver extends AbstractObserver {
 
         if(ElasticBalancer.getInstance().getStatsd() != null) {
             ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.container.executions");
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.registered", allContainers);
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.running", runningContainers);
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.stopped", stoppedContainers);
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.stopping", stoppingContainers);
-            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.starting", startingContainers);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.registered", allContainers);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.running", runningContainers);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.stopped", stoppedContainers);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.stopping", stoppingContainers);
+            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.starting", startingContainers);
         }
 
     }
