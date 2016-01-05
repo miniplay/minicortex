@@ -91,7 +91,7 @@ public class ElasticBalancer {
     }
 
     public void triggerProvisionContainers() {
-        if(this.EB_ALLOW_PROVISION_CONTAINERS) {
+        if(this.EB_ALLOW_PROVISION_CONTAINERS) { // Provision containers only if enabled in config
             Debugger.getInstance().printOutput("Triggered Container Provision...");
             // Force first manual containers load
             getContainerManager().loadContainers();
@@ -115,12 +115,11 @@ public class ElasticBalancer {
     private void loadConfig() {
         Config config = ConfigManager.getConfig();
         System.out.println(config.getElasticBalancerConfig());
-        if(config.EB_ALLOW_PROVISION_CONTAINERS) {
-            this.EB_ALLOW_PROVISION_CONTAINERS = config.EB_ALLOW_PROVISION_CONTAINERS;
-        } else {
-            throw new InvalidParameterException("EB_ALLOW_PROVISION_CONTAINERS parameter does not exist");
-        }
 
+        // Set if the ElasticBalancer is allowed to provision new containers
+        this.EB_ALLOW_PROVISION_CONTAINERS = config.EB_ALLOW_PROVISION_CONTAINERS;
+
+        // Set the tolerance threshold for the ElasticBalancer
         if(config.EB_TOLERANCE_THRESHOLD > 0) {
             this.EB_TOLERANCE_THRESHOLD = config.EB_TOLERANCE_THRESHOLD;
         } else {
@@ -163,13 +162,19 @@ public class ElasticBalancer {
             }
 
             if(isRemoveContainers) {
-                // TODO: Check DOCKER_MAX_SHUTDOWNS_IN_LOOP!!
                 Integer containersToKill = runningContainers - containersAfterBalance;
+                if(containersToKill > maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
+                    Debugger.getInstance().print("Max containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ maxShutdownsInLoop,this.getClass());
+                    containersToKill = maxShutdownsInLoop;
+                }
                 Debugger.getInstance().print("Killing " + containersToKill + " containers, left " + containersAfterBalance + " containers",this.getClass());
                 this.getContainerManager().killContainers(containersToKill);
             } else {
-                // TODO: DOCKER_MAX_BOOTS_IN_LOOP
                 Integer containersToStart = containersAfterBalance - runningContainers;
+                if(containersToStart > maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
+                    Debugger.getInstance().print("Max containers to start limit reached! Want to kill "+containersToStart+" and MAX is "+ maxBootsInLoop,this.getClass());
+                    containersToStart = maxBootsInLoop;
+                }
                 Debugger.getInstance().print("Adding " + containersToStart + " containers, left " + containersAfterBalance + " containers",this.getClass());
                 this.getContainerManager().startContainers(containersToStart);
             }
