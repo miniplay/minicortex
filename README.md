@@ -1,12 +1,21 @@
-# Description
-[UNDER DEVELOPMENT] Docker Elastic Load Balancer
+# MINICORTEX
 
-# Installation
+### Description
+[WIP] Minicortex is your own Docker Elastic Load Balancer!
+
+### Installation
 1. Clone repository
+
+```git clone https://github.com/miniplay/minicortex ```
+
 2. Create config file
-3. Create Observers
-4. execute compile_and_run.sh
 
-# Observers
+``` cd minicortex && cp config_example.yml minicortex_config.yml ```
 
-# Config
+3. Complie and run!
+
+``` sh compile_and_run.sh minicortex_config.yml ```
+
+### Observers
+
+### Config
