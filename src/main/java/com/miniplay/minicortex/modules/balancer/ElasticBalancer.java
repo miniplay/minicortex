@@ -37,8 +37,6 @@ public class ElasticBalancer {
     /* Elastic balancer config */
     public ScheduledExecutorService balancerThreadPool = Executors.newScheduledThreadPool(2);
     Runnable balancerRunnable = null;
-    private Long balancerRunnableTimeBeforeStart = 15L;
-    private Long balancerRunnableTimeInterval = 60L;
 
     /* Modules */
     private ContainerManager containerManager = null;
@@ -146,7 +144,7 @@ public class ElasticBalancer {
             Integer maxShutdownsInLoop = ConfigManager.getConfig().DOCKER_MAX_SHUTDOWNS_IN_LOOP;
             Integer runningContainers = this.getContainerManager().getRunningContainers().size();
             Integer containersAfterBalance = 0;
-            Boolean isRemoveContainers = false;
+            Boolean isRemoveContainers;
 
             if(runningContainers.intValue() != runningWorkers.intValue()) {
                 Debugger.getInstance().print("Workers & Containers doesn't match [ "+runningWorkers+" Workers vs "+runningContainers+" Containers ]",this.getClass());
@@ -157,8 +155,9 @@ public class ElasticBalancer {
                 Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + balanceScore + " score = " + (runningWorkers - Math.abs(balanceScore)),this.getClass());
                 if((runningWorkers - Math.abs(balanceScore)) < minContainers) containersAfterBalance = minContainers;
             } else {
+                isRemoveContainers = false;
                 Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + balanceScore + " score = " + (runningWorkers + balanceScore),this.getClass());
-                if((runningWorkers + balanceScore) > maxContainers) containersAfterBalance = maxContainers;
+                if((runningWorkers + Math.abs(balanceScore)) > maxContainers) containersAfterBalance = maxContainers;
             }
 
             if(isRemoveContainers) {
@@ -179,7 +178,7 @@ public class ElasticBalancer {
                 this.getContainerManager().startContainers(containersToStart);
             }
 
-            return containersAfterBalance;
+            return Math.abs(containersAfterBalance);
 
         } catch(Exception e) {
             e.printStackTrace();
@@ -214,7 +213,9 @@ public class ElasticBalancer {
                 balance();
             }
         };
-        balancerThreadPool.scheduleAtFixedRate(balancerRunnable, this.balancerRunnableTimeBeforeStart, this.balancerRunnableTimeInterval, TimeUnit.SECONDS);
+        Long balancerRunnableTimeBeforeStart = 15L;
+        Long balancerRunnableTimeInterval = 60L;
+        balancerThreadPool.scheduleAtFixedRate(balancerRunnable, balancerRunnableTimeBeforeStart, balancerRunnableTimeInterval, TimeUnit.SECONDS);
     }
 
     /**

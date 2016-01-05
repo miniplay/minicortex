@@ -19,16 +19,22 @@ public class EnvironmentManager {
         if(this.validateConfigPath(configPath)) {
             this.configPath = configPath;
         } else {
-            throw new InterruptedException("Config file " + configPath + " not valid!!");
+            String workingDir = System.getProperty("user.dir");
+            configPath = workingDir + "/" + configPath;
+            if(this.validateConfigPath(configPath)) {
+                this.configPath = configPath;
+            } else {
+                throw new InterruptedException("Config file " + configPath + " not valid!!");
+            }
         }
     }
 
     public EnvironmentManager() throws InterruptedException {
         String workingDir = System.getProperty("user.dir");
-        if(this.validateConfigPath(workingDir + DEFAULT_CFG_PATH)) {
-            this.configPath = workingDir + DEFAULT_CFG_PATH;
+        if(this.validateConfigPath(workingDir + "/" + DEFAULT_CFG_PATH)) {
+            this.configPath = workingDir + "/" + DEFAULT_CFG_PATH;
         } else {
-            throw new InterruptedException("Config file " + workingDir + DEFAULT_CFG_PATH + " not valid!!");
+            throw new InterruptedException("Config file " + workingDir + "/" + DEFAULT_CFG_PATH + " not valid!!");
         }
     }
 
