@@ -60,6 +60,9 @@ public class Container {
     public void start() {
         Debugger.getInstance().print("Container #" + this.getName() + " is going to start...",this.getClass());
         this.changeState(ACTION_START);
+        if(ElasticBalancer.getInstance().getStatsd() != null) {
+            ElasticBalancer.getInstance().getStatsd().increment("minicortex.elastic_balancer.containers.container.start");
+        }
     }
 
     /**
@@ -70,9 +73,15 @@ public class Container {
         Debugger.getInstance().print("Container #" + this.getName() + " is being ["+killMode+"] killed",this.getClass());
         if(killMode.toUpperCase().equals("SOFT")) {
             this.softKill();
+            if(ElasticBalancer.getInstance().getStatsd() != null) {
+                ElasticBalancer.getInstance().getStatsd().increment("minicortex.elastic_balancer.containers.container.softkill");
+            }
         } else {
             // Hard kill the machine, the worker would need to handle the shutdown sigterm
             this.changeState(ACTION_KILL);
+            if(ElasticBalancer.getInstance().getStatsd() != null) {
+                ElasticBalancer.getInstance().getStatsd().increment("minicortex.elastic_balancer.containers.container.hardkill");
+            }
         }
     }
 

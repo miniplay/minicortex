@@ -32,6 +32,12 @@ public class QueueObserver extends AbstractObserver {
                 + ElasticBalancer.getInstance().workers + " [WORKERS] \t"
                 + ElasticBalancer.getInstance().workers_queued_jobs + " [WORKER_QUEUED_JOBS] \t"
         );
+
+        if(ElasticBalancer.getInstance().getStatsd() != null) {
+            ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.queue.executions");
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.queue.workers", statusMessage.workers);
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.queue.workers_queued_jobs", statusMessage.workers_queued_jobs);
+        }
     }
 
     public void setConfig () {

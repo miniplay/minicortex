@@ -5,6 +5,7 @@ import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.docker.ContainerManager;
 import com.miniplay.minicortex.server.CortexServer;
+import com.timgroup.statsd.NonBlockingStatsDClient;
 
 import javax.swing.plaf.basic.BasicTreeUI;
 import java.security.InvalidParameterException;
@@ -24,11 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ElasticBalancer {
 
     /* Elastic Balancer Conf */
-    public Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
-    public Integer EB_MAX_PROVISION_CONTAINERS = 0;
-    public Integer EB_TOLERANCE_THRESHOLD = 0;
+    private Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
+    private Integer EB_MAX_PROVISION_CONTAINERS = 0;
+    private Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
-    public AtomicBoolean isProvisioning = new AtomicBoolean(false);
 
     /* Workers status */
     public AtomicInteger workers = new AtomicInteger();
@@ -37,11 +37,13 @@ public class ElasticBalancer {
     /* Elastic balancer config */
     public ScheduledExecutorService balancerThreadPool = Executors.newScheduledThreadPool(2);
     Runnable balancerRunnable = null;
-    public Long balancerRunnableTimeBeforeStart = 15L;
-    public Long balancerRunnableTimeInterval = 60L;
+    private Long balancerRunnableTimeBeforeStart = 15L;
+    private Long balancerRunnableTimeInterval = 60L;
 
     /* Modules */
     private ContainerManager containerManager = null;
+
+    private NonBlockingStatsDClient statsdClient;
 
 
     /**
@@ -71,6 +73,12 @@ public class ElasticBalancer {
 
         // Load Docker config
         this.containerManager = new ContainerManager(this);
+
+        if(ConfigManager.getConfig().STATSD_HOST != null && ConfigManager.getConfig().STATSD_HOST != null) {
+            statsdClient = new NonBlockingStatsDClient("", ConfigManager.getConfig().STATSD_HOST, ConfigManager.getConfig().STATSD_PORT);
+        } else {
+            statsdClient = null;
+        }
 
         // Start Balancer runnable
         this.startBalancerRunnable();
@@ -209,5 +217,9 @@ public class ElasticBalancer {
      */
     public ContainerManager getContainerManager() {
         return containerManager;
+    }
+
+    public NonBlockingStatsDClient getStatsd() {
+        return statsdClient;
     }
 }

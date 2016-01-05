@@ -2,6 +2,7 @@ package com.miniplay.custom.observers;
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
+import com.miniplay.minicortex.server.CortexServer;
 
 /**
  *
@@ -29,6 +30,16 @@ public class ContainerObserver extends AbstractObserver {
                 stoppingContainers +" [STOPPING] \t" +
                 startingContainers +" [STARTING] \t "
         );
+
+        if(ElasticBalancer.getInstance().getStatsd() != null) {
+            ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.container.executions");
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.registered", allContainers);
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.running", runningContainers);
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.stopped", stoppedContainers);
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.stopping", stoppingContainers);
+            ElasticBalancer.getInstance().getStatsd().recordGaugeValue("minicortex.observers.container.starting", startingContainers);
+        }
+
     }
 
     public void setConfig () {

@@ -228,6 +228,10 @@ public class ContainerManager {
             String creationOutput = CommandExecutor.getInstance().execute(command.toString());
             Debugger.getInstance().debug("Machine provision creation output: "+creationOutput, this.getClass());
 
+            if(ElasticBalancer.getInstance().getStatsd() != null) {
+                ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.containers.provision");
+            }
+
         } catch (IOException e) {
             System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
         }
