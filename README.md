@@ -38,8 +38,5 @@ EB_ALLOW_PROVISION_CONTAINERS       | Is Minicortex allowed to provision contain
 EB_TOLERANCE_THRESHOLD              | Tolerance threshold for the balancer | 3 |
 STATSD_HOST                         | STATSD HOST | null |
 STATSD_PORT                         | STATSD PORT | null |
-EB_TOLERANCE_THRESHOLD              | 3
-STATSD_HOST                         | graphite.lab.vpn.minijuegos.com
-STATSD_PORT                         | 8125
 
 #### Config appendix
