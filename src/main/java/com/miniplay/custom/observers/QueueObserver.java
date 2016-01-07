@@ -24,10 +24,12 @@ public class QueueObserver extends AbstractObserver {
         System.out.println(LOG_PREPEND + "Updating queue values...");
         String queueStatusOutput = this.fetch();
 
-        StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
+        if(queueStatusOutput != null) { // Only if the queue status fetch returned true
+            StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
 
-        ElasticBalancer.getInstance().workers.set(statusMessage.workers);
-        ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
+            ElasticBalancer.getInstance().workers.set(statusMessage.workers);
+            ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
+        }
 
         System.out.println(LOG_PREPEND + "\t"
                 + ElasticBalancer.getInstance().workers + " [WORKERS] \t"
@@ -36,8 +38,8 @@ public class QueueObserver extends AbstractObserver {
 
         if(Stats.getInstance().isEnabled()) {
             Stats.getInstance().get().increment("minicortex.observers.queue.executions");
-            Stats.getInstance().get().gauge("minicortex.observers.queue.workers", statusMessage.workers);
-            Stats.getInstance().get().gauge("minicortex.observers.queue.workers_queued_jobs", statusMessage.workers_queued_jobs);
+            Stats.getInstance().get().gauge("minicortex.observers.queue.workers", ElasticBalancer.getInstance().workers.get());
+            Stats.getInstance().get().gauge("minicortex.observers.queue.workers_queued_jobs", ElasticBalancer.getInstance().workers_queued_jobs.get());
         }
     }
 

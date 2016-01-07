@@ -66,6 +66,7 @@ public class ContainerManager {
     public void loadContainers() {
         try {
             String output = CommandExecutor.getInstance().execute("docker-machine ls");
+            System.out.println(output);
             ArrayList<String> containersToAdd = new ArrayList<String>();
             String[] SplittedString = output.split("\n");
             for (String line: SplittedString) {
