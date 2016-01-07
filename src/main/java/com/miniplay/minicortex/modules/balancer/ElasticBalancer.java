@@ -128,6 +128,7 @@ public class ElasticBalancer {
             Integer runningWorkers = this.workers.get();
             Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkers * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
             Debugger.getInstance().debug("Calculated score without config values: " + balanceScore,this.getClass());
+            Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.score",balanceScore);
             return balanceScore;
         } catch(Exception e) { // If we have any exception return the min number of containers set
             e.printStackTrace();
@@ -153,7 +154,7 @@ public class ElasticBalancer {
             Debugger.getInstance().print("Workers & Containers doesn't match [ "+runningWorkers+" Workers vs "+runningContainers+" Containers ]",this.getClass());
         }
 
-        balanceScore = Math.abs(balanceScore);
+        containersAfterBalance = Math.abs(balanceScore);
 
         if(balanceScore < 0) {
             isRemoveContainers = true;
@@ -173,6 +174,7 @@ public class ElasticBalancer {
             }
             Debugger.getInstance().print("Killing " + containersToKill + " containers, left " + containersAfterBalance + " containers",this.getClass());
             this.getContainerManager().killContainers(containersToKill);
+            Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",containersToKill);
         } else {
             Integer containersToStart = Math.abs(containersAfterBalance - runningContainers);
             if(containersToStart > maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
@@ -181,6 +183,7 @@ public class ElasticBalancer {
             }
             Debugger.getInstance().print("Adding " + containersToStart + " containers, left " + containersAfterBalance + " containers",this.getClass());
             this.getContainerManager().startContainers(containersToStart);
+            Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",containersToStart);
         }
 
     }
