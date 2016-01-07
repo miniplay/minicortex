@@ -1,5 +1,6 @@
 package com.miniplay.custom.observers;
 import com.google.gson.Gson;
+import com.miniplay.common.Stats;
 import com.miniplay.custom.ObserverHelpers.Queue.StatusMessage;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
@@ -33,10 +34,10 @@ public class QueueObserver extends AbstractObserver {
                 + ElasticBalancer.getInstance().workers_queued_jobs + " [WORKER_QUEUED_JOBS] \t"
         );
 
-        if(ElasticBalancer.getInstance().getStatsd() != null) {
-            ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.queue.executions");
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.queue.workers", statusMessage.workers);
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.queue.workers_queued_jobs", statusMessage.workers_queued_jobs);
+        if(Stats.getInstance().isEnabled()) {
+            Stats.getInstance().get().increment("minicortex.observers.queue.executions");
+            Stats.getInstance().get().gauge("minicortex.observers.queue.workers", statusMessage.workers);
+            Stats.getInstance().get().gauge("minicortex.observers.queue.workers_queued_jobs", statusMessage.workers_queued_jobs);
         }
     }
 

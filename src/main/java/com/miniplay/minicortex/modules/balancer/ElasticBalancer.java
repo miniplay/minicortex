@@ -1,6 +1,7 @@
 package com.miniplay.minicortex.modules.balancer;
 
 import com.miniplay.common.Debugger;
+import com.miniplay.common.Stats;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.docker.ContainerManager;
@@ -41,8 +42,6 @@ public class ElasticBalancer {
     /* Modules */
     private ContainerManager containerManager = null;
 
-    private NonBlockingStatsDClient statsdClient;
-
 
     /**
      * ElasticBalancer Instance
@@ -71,12 +70,6 @@ public class ElasticBalancer {
 
         // Load Docker config
         this.containerManager = new ContainerManager(this);
-
-        if(ConfigManager.getConfig().STATSD_HOST != null && ConfigManager.getConfig().STATSD_HOST != null) {
-            statsdClient = new NonBlockingStatsDClient("", ConfigManager.getConfig().STATSD_HOST, ConfigManager.getConfig().STATSD_PORT);
-        } else {
-            statsdClient = null;
-        }
 
         // Start Balancer runnable
         this.startBalancerRunnable();
@@ -223,9 +216,5 @@ public class ElasticBalancer {
      */
     public ContainerManager getContainerManager() {
         return containerManager;
-    }
-
-    public NonBlockingStatsDClient getStatsd() {
-        return statsdClient;
     }
 }

@@ -1,5 +1,6 @@
 package com.miniplay.custom.observers;
 import com.miniplay.common.Debugger;
+import com.miniplay.common.Stats;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.server.CortexServer;
@@ -31,13 +32,13 @@ public class ContainerObserver extends AbstractObserver {
                 startingContainers +" [STARTING] \t "
         );
 
-        if(ElasticBalancer.getInstance().getStatsd() != null) {
-            ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.container.executions");
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.registered", allContainers);
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.running", runningContainers);
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.stopped", stoppedContainers);
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.stopping", stoppingContainers);
-            ElasticBalancer.getInstance().getStatsd().gauge("minicortex.observers.container.starting", startingContainers);
+        if(Stats.getInstance().isEnabled()) {
+            Stats.getInstance().get().increment("minicortex.observers.container.executions");
+            Stats.getInstance().get().gauge("minicortex.observers.container.registered", allContainers);
+            Stats.getInstance().get().gauge("minicortex.observers.container.running", runningContainers);
+            Stats.getInstance().get().gauge("minicortex.observers.container.stopped", stoppedContainers);
+            Stats.getInstance().get().gauge("minicortex.observers.container.stopping", stoppingContainers);
+            Stats.getInstance().get().gauge("minicortex.observers.container.starting", startingContainers);
         }
 
     }

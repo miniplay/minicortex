@@ -2,6 +2,7 @@ package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
+import com.miniplay.common.Stats;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.exceptions.InvalidProvisionParams;
@@ -216,7 +217,7 @@ public class ContainerManager {
                 String commandPart = "--amazonec2-subnet-id '"+this.config.AMAZONEC2_SUBNET_ID+"' ";
                 command.append(commandPart);
             }
-//
+
             if(this.config.AMAZONEC2_PRIVATE_ADDRESS_ONLY) {
                 String commandPart = "--amazonec2-private-address-only ";
                 command.append(commandPart);
@@ -228,8 +229,8 @@ public class ContainerManager {
             String creationOutput = CommandExecutor.getInstance().execute(command.toString());
             Debugger.getInstance().debug("Machine provision creation output: "+creationOutput, this.getClass());
 
-            if(ElasticBalancer.getInstance().getStatsd() != null) {
-                ElasticBalancer.getInstance().getStatsd().increment("minicortex.observers.containers.provision");
+            if(Stats.getInstance().isEnabled()) {
+                Stats.getInstance().get().increment("minicortex.observers.containers.provision");
             }
 
         } catch (IOException e) {

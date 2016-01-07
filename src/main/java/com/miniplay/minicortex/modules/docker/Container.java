@@ -2,6 +2,7 @@ package com.miniplay.minicortex.modules.docker;
 
 import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
+import com.miniplay.common.Stats;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 
@@ -60,8 +61,8 @@ public class Container {
     public void start() {
         Debugger.getInstance().print("Container #" + this.getName() + " is going to start...",this.getClass());
         this.changeState(ACTION_START);
-        if(ElasticBalancer.getInstance().getStatsd() != null) {
-            ElasticBalancer.getInstance().getStatsd().increment("minicortex.elastic_balancer.containers.container.start");
+        if(Stats.getInstance().isEnabled()) {
+            Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.start");
         }
     }
 
@@ -73,14 +74,14 @@ public class Container {
         Debugger.getInstance().print("Container #" + this.getName() + " is being ["+killMode+"] killed",this.getClass());
         if(killMode.toUpperCase().equals("SOFT")) {
             this.softKill();
-            if(ElasticBalancer.getInstance().getStatsd() != null) {
-                ElasticBalancer.getInstance().getStatsd().increment("minicortex.elastic_balancer.containers.container.softkill");
+            if(Stats.getInstance().isEnabled()) {
+                Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.softkill");
             }
         } else {
             // Hard kill the machine, the worker would need to handle the shutdown sigterm
             this.changeState(ACTION_KILL);
-            if(ElasticBalancer.getInstance().getStatsd() != null) {
-                ElasticBalancer.getInstance().getStatsd().increment("minicortex.elastic_balancer.containers.container.hardkill");
+            if(Stats.getInstance().isEnabled()) {
+                Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.hardkill");
             }
         }
     }
