@@ -157,12 +157,12 @@ public class ElasticBalancer {
 
         if(balanceScore < 0) {
             isRemoveContainers = true;
-            Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + balanceScore + " score = " + (runningWorkers - Math.abs(balanceScore)),this.getClass());
-            if((runningWorkers - balanceScore) < minContainers) containersAfterBalance = minContainers;
+            Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + containersAfterBalance + " score = " + (runningWorkers - containersAfterBalance),this.getClass());
+            if((runningWorkers - containersAfterBalance) <= minContainers) containersAfterBalance = minContainers;
         } else {
             isRemoveContainers = false;
-            Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + balanceScore + " score = " + (runningWorkers + balanceScore),this.getClass());
-            if((runningWorkers + balanceScore) > maxContainers) containersAfterBalance = maxContainers;
+            Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + containersAfterBalance + " score = " + (runningWorkers + containersAfterBalance),this.getClass());
+            if((runningWorkers + containersAfterBalance) >= maxContainers) containersAfterBalance = maxContainers;
         }
 
         if(isRemoveContainers) {

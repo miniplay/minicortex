@@ -66,7 +66,7 @@ public class ContainerManager {
     public void loadContainers() {
         try {
             String output = CommandExecutor.getInstance().execute("docker-machine ls");
-            System.out.println("Container load: " +output);
+            //System.out.println("Container load: " +output);
             ArrayList<String> containersToAdd = new ArrayList<String>();
             String[] SplittedString = output.split("\n");
             for (String line: SplittedString) {
@@ -228,7 +228,7 @@ public class ContainerManager {
 
             Debugger.getInstance().debug("Machine provision command: " + command, this.getClass());
             String creationOutput = CommandExecutor.getInstance().execute(command.toString());
-            Debugger.getInstance().debug("Machine provision creation output: "+creationOutput, this.getClass());
+            Debugger.getInstance().debug("Machine provisioned! - "+creationOutput, this.getClass());
 
             if(Stats.getInstance().isEnabled()) {
                 Stats.getInstance().get().increment("minicortex.observers.containers.provision");
