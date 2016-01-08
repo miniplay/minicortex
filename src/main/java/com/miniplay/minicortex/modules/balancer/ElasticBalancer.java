@@ -27,7 +27,6 @@ public class ElasticBalancer {
 
     /* Elastic Balancer Conf */
     private Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
-    private Integer EB_MAX_PROVISION_CONTAINERS = 0;
     private Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
 

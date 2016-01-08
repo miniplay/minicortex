@@ -24,12 +24,6 @@ public class CortexServer {
     // Cortex config
     protected Config configInstance = null;
 
-    // Executors
-    public ScheduledExecutorService statusThreadPool = Executors.newScheduledThreadPool(2);
-
-    // Modules
-    private ElasticBalancer elasticBalancer = null;
-
     // Observers
     private ObserverManager observerManager = null;
 
@@ -37,16 +31,10 @@ public class CortexServer {
      * CortexServer constructor
      */
     public CortexServer() throws DependenciesNotInstalled {
-
         this.checkDependencies();
 
         // Load app config
         this.configInstance = ConfigManager.getConfig();
-
-        // Load Modules
-        this.elasticBalancer = ElasticBalancer.getInstance();
-        this.observerManager = new ObserverManager();
-
     }
 
     /**
@@ -64,13 +52,18 @@ public class CortexServer {
      * Let's run the CortexServer
      */
     public void run() throws Exception {
+
+        // Modules are loaded in run method, ElasticBalancer must only be instantiated from here!!
+        ElasticBalancer elasticBalancer = ElasticBalancer.getInstance();
+        this.observerManager = new ObserverManager();
+
         // Check balancer config is OK
-        if(!this.elasticBalancer.isLoaded) {
+        if(!elasticBalancer.isLoaded) {
             throw new Exception("Elastic Balancer not loaded!");
         }
 
         // Provision containers if needed
-        this.elasticBalancer.triggerProvisionContainers();
+        elasticBalancer.triggerProvisionContainers();
 
         // All OK, Run executors!
         Debugger.getInstance().printOutput(" Server started!");

@@ -41,9 +41,7 @@ public class RunServer {
     protected static void printCLISyntax() {
         System.out.println("\n");
         System.out.println("Accepted command line arguments:");
-        System.out.println("    [ string serverEnvironment (dev|prod) ]     ");
-        System.out.println("Where:");
-        System.out.println("    serverEnvironment     Environment where we want to run the service (default dev)  ");
+        System.out.println("    [ Config file]     ");
     }
 
 }
