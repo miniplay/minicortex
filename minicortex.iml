@@ -14,5 +14,8 @@
     <orderEntry type="library" exported="" name="org.yaml:snakeyaml:1.9" level="project" />
     <orderEntry type="library" exported="" name="com.google.code.gson:gson:2.5" level="project" />
     <orderEntry type="library" exported="" name="com.timgroup:java-statsd-client:3.1.0" level="project" />
+    <orderEntry type="library" name="gson-2.5" level="project" />
+    <orderEntry type="library" name="java-statsd-client-3.1.0" level="project" />
+    <orderEntry type="library" name="snakeyaml-1.9" level="project" />
   </component>
 </module>

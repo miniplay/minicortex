@@ -162,7 +162,7 @@ public class ElasticBalancer {
         } else {
             isRemoveContainers = false;
             Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + containersAfterBalance + " score = " + (runningWorkers + containersAfterBalance),this.getClass());
-            if((runningWorkers + containersAfterBalance) >= maxContainers) containersAfterBalance = maxContainers;
+            if((containersAfterBalance) >= maxContainers) containersAfterBalance = maxContainers;
         }
 
         if(isRemoveContainers) {

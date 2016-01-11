@@ -28,7 +28,12 @@ public class QueueObserver extends AbstractObserver {
             StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
 
             ElasticBalancer.getInstance().workers.set(statusMessage.workers);
-            ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
+
+            // Run with -Dstatsd=true to enable statsd
+            if (System.getProperty("testQueueMode") == null ||  ( System.getProperty("testQueueMode") != null && System.getProperty("testQueueMode").equalsIgnoreCase("false")) ) {
+                ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
+            }
+
         }
 
         System.out.println(LOG_PREPEND + "\t"
