@@ -2,6 +2,8 @@ package com.miniplay.custom.observers;
 import com.google.gson.Gson;
 import com.miniplay.common.Stats;
 import com.miniplay.custom.ObserverHelpers.Queue.StatusMessage;
+import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import java.io.BufferedReader;
@@ -29,8 +31,9 @@ public class QueueObserver extends AbstractObserver {
 
             ElasticBalancer.getInstance().workers.set(statusMessage.workers);
 
-            // Run with -Dstatsd=true to enable statsd
-            if (System.getProperty("testQueueMode") == null ||  ( System.getProperty("testQueueMode") != null && System.getProperty("testQueueMode").equalsIgnoreCase("false")) ) {
+
+            Config config = ConfigManager.getConfig();
+            if (! config.isTestQueueMode() ) {
                 ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
             }
 

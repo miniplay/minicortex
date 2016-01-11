@@ -31,6 +31,7 @@ public class Config {
 
     /* GENERAL */
     public boolean DEBUG = false;
+    public boolean TESTQUEUEMODE = false;
 
     /* DOCKER */
     public String DOCKER_DEFAULT_DRIVER = "amazonec2";
@@ -174,6 +175,10 @@ public class Config {
             }
         }
         return requestedConfig;
+    }
+
+    public boolean isTestQueueMode() {
+        return TESTQUEUEMODE;
     }
 
     /**

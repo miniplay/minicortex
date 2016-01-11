@@ -1,5 +1,7 @@
 package com.miniplay.custom.observers;
 import com.miniplay.common.Stats;
+import com.miniplay.minicortex.config.Config;
+import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 
@@ -15,9 +17,9 @@ public class TestObserver extends AbstractObserver {
 
     public void runObserver() {
 
-        if (System.getProperty("testQueueMode") == null ||  ( System.getProperty("testQueueMode") != null && System.getProperty("testQueueMode").equalsIgnoreCase("false")) ) {
-            return;
-        }
+        Config config = ConfigManager.getConfig();
+
+        if (!config.isTestQueueMode()) {return;}
 
         int workerQueuedJobs = ElasticBalancer.getInstance().workers_queued_jobs.get();
         int newQueueValue = randInt(1,30);
