@@ -29,6 +29,9 @@ public class ContainerManager {
     protected ElasticBalancer elasticBalancer = null;
     public Boolean isLoaded = false;
     public volatile ConcurrentHashMap<String, Container> containers = new ConcurrentHashMap<String, Container>();
+
+    public volatile ConcurrentHashMap<String, Container> containersScheduledStop = new ConcurrentHashMap<String, Container>();
+    public volatile ConcurrentHashMap<String, Container> containersScheduledStart = new ConcurrentHashMap<String, Container>();
     private Config config = null;
 
     /**
@@ -66,10 +69,10 @@ public class ContainerManager {
     public void loadContainers() {
         try {
             String output = CommandExecutor.getInstance().execute("docker-machine ls");
-            //System.out.println("Container load: " +output);
+            System.out.println("Container load: " +output);
             ArrayList<String> containersToAdd = new ArrayList<String>();
-            String[] SplittedString = output.split("\n");
-            for (String line: SplittedString) {
+            String[] splittedString = output.split("\n");
+            for (String line: splittedString) {
                 // Exclude headers & error lines
                 if((!line.contains("ACTIVE") && !line.contains("DRIVER")) && !line.toLowerCase().contains("error")) {
                     // Sanitize string and create container
@@ -96,11 +99,12 @@ public class ContainerManager {
      * @param containersToAdd ArrayList
      */
     private void registerContainersFromProcessString(ArrayList<String> containersToAdd) {
+        Integer successContainers = 0;
+        Integer errorContainers = 0;
         Debugger.getInstance().debug("Registering loaded containers", this.getClass());
         for(String processString:containersToAdd) {
             try {
                 String[] splittedProcessString = processString.split("\\|");
-                Debugger.getInstance().debug("Registering container ["+processString+"]", this.getClass());
 
                 if(splittedProcessString[3].equals("Timeout")) {
                     throw new Exception("Container state was timeout, skipping");
@@ -113,14 +117,17 @@ public class ContainerManager {
 
                 Boolean registerResponse = this.registerContainer(containerName, containerDriver, containerState, containerUrl);
                 if(registerResponse) {
-                    Debugger.getInstance().debug("Registered new container ["+containerName+"]", this.getClass());
+                    successContainers++;
                 } else {
+                    errorContainers++;
                     System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "ERROR registering new container ["+containerName+"]");
                 }
             } catch (Exception e) {
+                errorContainers++;
                 System.out.println("Exception registering container [" + processString + "] message: " + e.getMessage());
             }
         }
+        Debugger.getInstance().debug("Registered "+successContainers+" containers with "+errorContainers+" errors", this.getClass());
     }
 
     /**
@@ -136,6 +143,17 @@ public class ContainerManager {
             } else {
                 this.containers.put(name, container);
             }
+
+            // remove from scheduled maps if start/stop action is complete and they exist in the scheduled map
+            if(this.containersScheduledStart.get(name) != null && container.getState().equals(Container.STATUS_RUNNING)) {
+                Debugger.getInstance().debug("Container ["+name+"] existed in containersScheduledStart, removing...", this.getClass());
+                this.containersScheduledStart.remove(name);
+            }
+            if(this.containersScheduledStop.get(name) != null && container.getState().equals(Container.STATUS_STOPPED)) {
+                Debugger.getInstance().debug("Container ["+name+"] existed in containersScheduledStop, removing...", this.getClass());
+                this.containersScheduledStop.remove(name);
+            }
+
             return true;
         } catch (Exception e) {
             System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + e.getMessage());

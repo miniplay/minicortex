@@ -43,6 +43,8 @@ public class ElasticBalancer {
     public ScheduledExecutorService balancerThreadPool = Executors.newScheduledThreadPool(2);
     Runnable balancerRunnable = null;
 
+
+
     /* Modules */
     private ContainerManager containerManager = null;
 

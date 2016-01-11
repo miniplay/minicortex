@@ -23,13 +23,15 @@ public class ContainerObserver extends AbstractObserver {
         Integer runningContainers = ElasticBalancer.getInstance().getContainerManager().getRunningContainers().size();
         Integer stoppingContainers = ElasticBalancer.getInstance().getContainerManager().getStoppingContainers().size();
         Integer startingContainers = ElasticBalancer.getInstance().getContainerManager().getStartingContainers().size();
+        Integer errorContainers = ElasticBalancer.getInstance().getContainerManager().getErrorContainers().size();
 
         System.out.println(LOG_PREPEND + "\t" +
-                allContainers +" [REGISTER] \t"+
-                runningContainers +" [RUNNING] \t"+
-                stoppedContainers +" [STOPPED] \t" +
-                stoppingContainers +" [STOPPING] \t" +
-                startingContainers +" [STARTING] \t "
+                allContainers + " [REGISTER] \t" +
+                runningContainers + " [RUNNING] \t" +
+                stoppedContainers + " [STOPPED] \t" +
+                stoppingContainers + " [STOPPING] \t" +
+                startingContainers + " [STARTING] \t " +
+                errorContainers + " [ERROR] \t "
         );
 
         if(Stats.getInstance().isEnabled()) {

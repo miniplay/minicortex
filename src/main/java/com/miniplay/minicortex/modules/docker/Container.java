@@ -3,7 +3,6 @@ package com.miniplay.minicortex.modules.docker;
 import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
 import com.miniplay.common.Stats;
-import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 
 import java.io.IOException;
@@ -64,6 +63,8 @@ public class Container {
         if(Stats.getInstance().isEnabled()) {
             Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.start");
         }
+        // Add container to scheduled stop
+        ElasticBalancer.getInstance().getContainerManager().containersScheduledStart.put(this.getName(),this);
     }
 
     /**
@@ -84,6 +85,8 @@ public class Container {
                 Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.hardkill");
             }
         }
+        // Add container to scheduled stop
+        ElasticBalancer.getInstance().getContainerManager().containersScheduledStop.put(this.getName(),this);
     }
 
     /**
