@@ -147,7 +147,6 @@ public class ElasticBalancer {
         Integer maxShutdownsInLoop = ConfigManager.getConfig().DOCKER_MAX_SHUTDOWNS_IN_LOOP;
         Integer runningContainers = this.getContainerManager().getRunningContainers().size();
         Integer containersAfterBalance = 0;
-        Boolean isRemoveContainers;
 
         if(runningContainers.intValue() != runningWorkers.intValue()) {
             Debugger.getInstance().print("Workers & Containers doesn't match [ "+runningWorkers+" Workers vs "+runningContainers+" Containers ]",this.getClass());
@@ -155,34 +154,39 @@ public class ElasticBalancer {
 
         containersAfterBalance = Math.abs(balanceScore);
 
-        if(balanceScore < 0) {
-            isRemoveContainers = true;
-            Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + containersAfterBalance + " score = " + (runningWorkers - containersAfterBalance),this.getClass());
-            if((runningWorkers - containersAfterBalance) <= minContainers) containersAfterBalance = minContainers;
-        } else {
-            isRemoveContainers = false;
-            Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + containersAfterBalance + " score = " + (runningWorkers + containersAfterBalance),this.getClass());
-            if((containersAfterBalance) >= maxContainers) containersAfterBalance = maxContainers;
-        }
+        int signum = Integer.signum(balanceScore);
 
-        if(isRemoveContainers) {
-            Integer containersToKill = Math.abs(runningContainers - containersAfterBalance);
-            if(containersToKill > maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
-                Debugger.getInstance().print("Max containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ maxShutdownsInLoop,this.getClass());
-                containersToKill = maxShutdownsInLoop;
-            }
-            Debugger.getInstance().print("Killing " + containersToKill + " containers, left " + containersAfterBalance + " containers",this.getClass());
-            this.getContainerManager().killContainers(containersToKill);
-            Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",containersToKill);
-        } else {
-            Integer containersToStart = Math.abs(containersAfterBalance - runningContainers);
-            if(containersToStart > maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
-                Debugger.getInstance().print("Max containers to start limit reached! Want to kill "+containersToStart+" and MAX is "+ maxBootsInLoop,this.getClass());
-                containersToStart = maxBootsInLoop;
-            }
-            Debugger.getInstance().print("Adding " + containersToStart + " containers, left " + containersAfterBalance + " containers",this.getClass());
-            this.getContainerManager().startContainers(containersToStart);
-            Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",containersToStart);
+        switch (signum) {
+            // Negative number. Remove containers case
+            case -1:
+                Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + containersAfterBalance + " score = " + (runningWorkers - containersAfterBalance),this.getClass());
+                if((runningWorkers - containersAfterBalance) <= minContainers) containersAfterBalance = minContainers;
+                Integer containersToKill = Math.abs(runningContainers - containersAfterBalance);
+                if(containersToKill > maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
+                    Debugger.getInstance().print("Max containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ maxShutdownsInLoop,this.getClass());
+                    containersToKill = maxShutdownsInLoop;
+                }
+                Debugger.getInstance().print("Killing " + containersToKill + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                this.getContainerManager().killContainers(containersToKill);
+                Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",containersToKill);
+                break;
+            // Null case. Keep containers number
+            case 0:
+                Debugger.getInstance().debug("Null score (keeping containers) | " + runningWorkers + " workers " + containersAfterBalance + " score = " + (runningWorkers - containersAfterBalance),this.getClass());
+                break;
+            // Positive number. Provision containers case
+            case 1:
+                Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + containersAfterBalance + " score = " + (runningWorkers + containersAfterBalance),this.getClass());
+                if((containersAfterBalance) >= maxContainers) containersAfterBalance = maxContainers;
+                Integer containersToStart = Math.abs(containersAfterBalance - runningContainers);
+                if(containersToStart > maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
+                    Debugger.getInstance().print("Max containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ maxBootsInLoop,this.getClass());
+                    containersToStart = maxBootsInLoop;
+                }
+                Debugger.getInstance().print("Adding " + containersToStart + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                this.getContainerManager().startContainers(containersToStart);
+                Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",containersToStart);
+                break;
         }
 
     }
