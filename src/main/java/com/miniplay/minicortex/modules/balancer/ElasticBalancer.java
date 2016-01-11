@@ -140,13 +140,14 @@ public class ElasticBalancer {
      * @param balanceScore Integer
      */
     private void elasticBalanceContainers(Integer balanceScore) {
+        Config configInstance = ConfigManager.getConfig();
         Integer runningWorkers = this.workers.get();
-        Integer maxContainers = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
-        Integer minContainers = ConfigManager.getConfig().DOCKER_MIN_CONTAINERS;
-        Integer maxBootsInLoop = ConfigManager.getConfig().DOCKER_MAX_BOOTS_IN_LOOP;
-        Integer maxShutdownsInLoop = ConfigManager.getConfig().DOCKER_MAX_SHUTDOWNS_IN_LOOP;
+        Integer maxContainers = configInstance.DOCKER_MAX_CONTAINERS;
+        Integer minContainers = configInstance.DOCKER_MIN_CONTAINERS;
+        Integer maxBootsInLoop = configInstance.DOCKER_MAX_BOOTS_IN_LOOP;
+        Integer maxShutdownsInLoop = configInstance.DOCKER_MAX_SHUTDOWNS_IN_LOOP;
         Integer runningContainers = this.getContainerManager().getRunningContainers().size();
-        Integer containersAfterBalance = 0;
+        Integer containersAfterBalance = configInstance.DOCKER_MIN_CONTAINERS; // Equaling to minimum
 
         if(runningContainers.intValue() != runningWorkers.intValue()) {
             Debugger.getInstance().print("Workers & Containers doesn't match [ "+runningWorkers+" Workers vs "+runningContainers+" Containers ]",this.getClass());
@@ -154,26 +155,30 @@ public class ElasticBalancer {
 
         containersAfterBalance = Math.abs(balanceScore);
 
-        int signum = Integer.signum(balanceScore);
+        int scoreSign = Integer.signum(balanceScore);
 
-        switch (signum) {
+        switch (scoreSign) {
             // Negative number. Remove containers case
             case -1:
                 Debugger.getInstance().debug("Negative score (removing containers) | " + runningWorkers + " workers " + containersAfterBalance + " score = " + (runningWorkers - containersAfterBalance),this.getClass());
                 if((runningWorkers - containersAfterBalance) <= minContainers) containersAfterBalance = minContainers;
                 Integer containersToKill = Math.abs(runningContainers - containersAfterBalance);
+
                 if(containersToKill > maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
                     Debugger.getInstance().print("Max containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ maxShutdownsInLoop,this.getClass());
                     containersToKill = maxShutdownsInLoop;
                 }
+
                 Debugger.getInstance().print("Killing " + containersToKill + " containers, left " + containersAfterBalance + " containers",this.getClass());
                 this.getContainerManager().killContainers(containersToKill);
                 Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",containersToKill);
                 break;
+
             // Null case. Keep containers number
             case 0:
                 Debugger.getInstance().debug("Null score (keeping containers) | " + runningWorkers + " workers " + containersAfterBalance + " score = " + (runningWorkers - containersAfterBalance),this.getClass());
                 break;
+
             // Positive number. Provision containers case
             case 1:
                 Debugger.getInstance().debug("Positive score (adding containers) | " + runningWorkers + " workers + " + containersAfterBalance + " score = " + (runningWorkers + containersAfterBalance),this.getClass());
@@ -183,7 +188,7 @@ public class ElasticBalancer {
                     Debugger.getInstance().print("Max containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ maxBootsInLoop,this.getClass());
                     containersToStart = maxBootsInLoop;
                 }
-                Debugger.getInstance().print("Adding " + containersToStart + " containers, left " + containersAfterBalance + " containers",this.getClass());
+                Debugger.getInstance().print("Adding " + containersToStart + " containers, " + containersAfterBalance + " containers present",this.getClass());
                 this.getContainerManager().startContainers(containersToStart);
                 Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",containersToStart);
                 break;

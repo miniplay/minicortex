@@ -30,12 +30,7 @@ public class QueueObserver extends AbstractObserver {
             StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
 
             ElasticBalancer.getInstance().workers.set(statusMessage.workers);
-
-
-            Config config = ConfigManager.getConfig();
-            if (! config.isTestQueueMode() ) {
-                ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
-            }
+            ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
 
         }
 

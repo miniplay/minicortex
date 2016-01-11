@@ -178,7 +178,7 @@ public class Config {
     }
 
     public boolean isTestQueueMode() {
-        return TESTQUEUEMODE;
+        return this.TESTQUEUEMODE;
     }
 
     /**
