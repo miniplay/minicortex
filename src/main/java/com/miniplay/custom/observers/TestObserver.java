@@ -5,7 +5,7 @@ import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
@@ -39,9 +39,7 @@ public class TestObserver extends AbstractObserver {
 
     public static int randInt(int min, int max) {
 
-        Random rand = new Random();
-
-        int randomNum = rand.nextInt((max - min) + 1) + min;
+        int randomNum = ThreadLocalRandom.current().nextInt(min, max + 1);
 
         return randomNum;
     }
