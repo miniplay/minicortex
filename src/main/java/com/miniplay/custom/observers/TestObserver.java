@@ -25,9 +25,10 @@ public class TestObserver extends AbstractObserver {
         int newQueueValue = randInt(1,30);
 
         System.out.println(LOG_PREPEND + "\t"
-                + " NEW [WORKER_QUEUED_JOBS] \t" + ElasticBalancer.getInstance().workers_queued_jobs.get()
+                + " NEW [WORKER_QUEUED_JOBS] \t" + newQueueValue
         );
 
+        ElasticBalancer.getInstance().workers_queued_jobs.set(newQueueValue);
 
     }
 
