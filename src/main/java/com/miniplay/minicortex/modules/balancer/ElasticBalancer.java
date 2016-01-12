@@ -130,7 +130,7 @@ public class ElasticBalancer {
         this.minContainers = configInstance.DOCKER_MIN_CONTAINERS;
         this.maxBootsInLoop = configInstance.DOCKER_MAX_BOOTS_IN_LOOP;
         this.maxShutdownsInLoop = configInstance.DOCKER_MAX_SHUTDOWNS_IN_LOOP;
-        this.minsShutdownLocked = configInstance.DOCKER_SHUTDOWN_MINS_LOCK;
+        this.minsShutdownLocked = configInstance.EB_SHUTDOWN_MINS_LOCK;
 
     }
 
