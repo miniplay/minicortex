@@ -11,6 +11,7 @@ import com.timgroup.statsd.NonBlockingStatsDClient;
 import javax.swing.plaf.basic.BasicTreeUI;
 import java.security.InvalidParameterException;
 import java.security.KeyStore;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,6 +35,8 @@ public class ElasticBalancer {
     private Integer minContainers = 1;
     private Integer maxBootsInLoop = 1;
     private Integer maxShutdownsInLoop = 1;
+    private Integer minsShutdownLocked = 3;
+    private long lastBootTs = 0L;
 
     /* Workers status */
     public AtomicInteger workers = new AtomicInteger();
@@ -127,6 +130,7 @@ public class ElasticBalancer {
         this.minContainers = configInstance.DOCKER_MIN_CONTAINERS;
         this.maxBootsInLoop = configInstance.DOCKER_MAX_BOOTS_IN_LOOP;
         this.maxShutdownsInLoop = configInstance.DOCKER_MAX_SHUTDOWNS_IN_LOOP;
+        this.minsShutdownLocked = configInstance.DOCKER_SHUTDOWN_MINS_LOCK;
 
     }
 
@@ -176,14 +180,16 @@ public class ElasticBalancer {
                 Integer containersToKill = Math.abs(runningContainers - containerScore);
 
                 if(containersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
-                    Debugger.getInstance().print("INFO: Containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
+                    Debugger.getInstance().print("## INFO: Containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
                     containersToKill = this.maxShutdownsInLoop;
                 }
 
+                // Check if we can remove machines
+
                 if (containersToKill == 0) {
-                    Debugger.getInstance().debug("#NEGATIVE SCORE: " + runningWorkers + " active workers, No containers to remove (MIN_CONTAINERS = "+ this.minContainers +").",this.getClass());
+                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, No containers to remove (MIN_CONTAINERS = "+ this.minContainers +").",this.getClass());
                 } else {
-                    Debugger.getInstance().debug("#NEGATIVE SCORE: " + runningWorkers + " active workers, " + containersToKill + " to remove.",this.getClass());
+                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, " + containersToKill + " to remove.",this.getClass());
                 }
 
                 this.removeContainers(containersToKill);
@@ -191,7 +197,7 @@ public class ElasticBalancer {
 
             // Null case. Keep containers number
             case 0:
-                Debugger.getInstance().debug("ZERO SCORE: " + runningWorkers + " active workers, nothing to do. Score " + containerScore,this.getClass());
+                Debugger.getInstance().debug("--> ZERO SCORE: " + runningWorkers + " active workers, nothing to do. Score " + containerScore,this.getClass());
                 break;
 
             // Positive number. Provision containers case
@@ -200,14 +206,14 @@ public class ElasticBalancer {
                 if((containerScore) >= this.maxContainers) containerScore = this.maxContainers;
                 Integer containersToStart = Math.abs(containerScore - runningContainers);
                 if(containersToStart > this.maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
-                    Debugger.getInstance().print("INFO: Containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
+                    Debugger.getInstance().print("## INFO: Containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
                     containersToStart = this.maxBootsInLoop;
                 }
 
                 if (containersToStart == 0) {
-                    Debugger.getInstance().debug("#POSITIVE SCORE: " + runningWorkers + " active workers, No containers to boot up (MAX_CONTAINERS = "+ this.maxContainers +").",this.getClass());
+                    Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, No containers to boot up (MAX_CONTAINERS = "+ this.maxContainers +").",this.getClass());
                 } else {
-                    Debugger.getInstance().debug("#POSITIVE SCORE: " + runningWorkers + " active workers, + " + containersToStart + " containers to start.",this.getClass());
+                    Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, + " + containersToStart + " containers to start.",this.getClass());
                 }
 
                 this.addContainers(containersToStart);
@@ -253,18 +259,42 @@ public class ElasticBalancer {
         return result;
     }
 
+    /**
+     * Wrapper to Boot-up containers
+     * @param howMany integer
+     */
     private void addContainers(int howMany) {
         if (howMany == 0) {return;}
         Debugger.getInstance().debug("Booting " + howMany + " container..",this.getClass());
         this.getContainerManager().startContainers(howMany);
+        this.refreshShutdownLockTs();
         Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",howMany);
     }
 
+    /**
+     * Wrapper to Remove containers
+     * @param howMany integer
+     */
     private void removeContainers(int howMany) {
         if (howMany == 0) {return;}
+        if (!this.canShutdownContainer()) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd 'at' hh:mm:ss");
+            String date = sdf.format(this.lastBootTs*1000);
+            Debugger.getInstance().debug("#INFO: Containers can't be removed yet due to  " + this.minsShutdownLocked + " mins lock after last container boot @ "+date,this.getClass());
+            return;
+        }
         Debugger.getInstance().debug("Removing " + howMany + " container..",this.getClass());
         this.getContainerManager().killContainers(howMany);
         Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",howMany);
+    }
+
+    private boolean canShutdownContainer() {
+        long nowTs = System.currentTimeMillis() / 1000L;
+        return (nowTs >= this.lastBootTs + (this.minsShutdownLocked*60 ) );
+    }
+
+    private void refreshShutdownLockTs() {
+        this.lastBootTs = System.currentTimeMillis() / 1000L;
     }
 
     /**

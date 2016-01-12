@@ -43,6 +43,7 @@ public class Config {
     public String DOCKER_KILL_MODE = null;
     public String DOCKER_SOFT_KILL_PATH = null;
     public String DOCKER_SOFT_KILL_FILENAME = null;
+    public Integer DOCKER_SHUTDOWN_MINS_LOCK = 3;
 
     /* AMAZON EC2 DOCKER DRIVER */
     public String AMAZONEC2_REGION = "";
