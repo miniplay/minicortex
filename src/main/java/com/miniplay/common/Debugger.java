@@ -37,7 +37,7 @@ public class Debugger {
     }
 
     public void print(Object message, Class<?> context) {
-        System.out.println("[" + context.getName() + "]: " + message);
+        System.out.println("[" + context.getSimpleName() + "]: " + message);
     }
 
 }

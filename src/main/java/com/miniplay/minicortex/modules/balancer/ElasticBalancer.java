@@ -139,7 +139,7 @@ public class ElasticBalancer {
             Integer workersQueuedJobs = this.workers_queued_jobs.get();
             Integer runningWorkers = this.workers.get();
             Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkers * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
-            Debugger.getInstance().debug("Calculated score without config values: " + balanceScore,this.getClass());
+            Debugger.getInstance().debug("CALCULATED SCORE: " + balanceScore,this.getClass());
             Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.score",balanceScore);
             return balanceScore;
         } catch(Exception e) { // If we have any exception return the min number of containers set
@@ -172,23 +172,26 @@ public class ElasticBalancer {
             // Negative number. Remove containers case
             case -1:
 
-
                 if((runningWorkers - containerScore) <= this.minContainers) containerScore = this.minContainers;
                 Integer containersToKill = Math.abs(runningContainers - containerScore);
 
                 if(containersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
-                    Debugger.getInstance().print("Max containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
+                    Debugger.getInstance().print("INFO: Containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
                     containersToKill = this.maxShutdownsInLoop;
                 }
 
-                Debugger.getInstance().debug("NEGATIVE SCORE - " + runningWorkers + " active workers, " + containersToKill + " to remove. Score " + containerScore,this.getClass());
+                if (containersToKill == 0) {
+                    Debugger.getInstance().debug("#NEGATIVE SCORE: " + runningWorkers + " active workers, No containers to remove (MIN_CONTAINERS = "+ this.minContainers +").",this.getClass());
+                } else {
+                    Debugger.getInstance().debug("#NEGATIVE SCORE: " + runningWorkers + " active workers, " + containersToKill + " to remove.",this.getClass());
+                }
 
                 this.removeContainers(containersToKill);
                 break;
 
             // Null case. Keep containers number
             case 0:
-                Debugger.getInstance().debug("ZERO SCORE - " + runningWorkers + " active workers, nothing to do. Score " + containerScore,this.getClass());
+                Debugger.getInstance().debug("ZERO SCORE: " + runningWorkers + " active workers, nothing to do. Score " + containerScore,this.getClass());
                 break;
 
             // Positive number. Provision containers case
@@ -197,11 +200,15 @@ public class ElasticBalancer {
                 if((containerScore) >= this.maxContainers) containerScore = this.maxContainers;
                 Integer containersToStart = Math.abs(containerScore - runningContainers);
                 if(containersToStart > this.maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
-                    Debugger.getInstance().print("Max containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
+                    Debugger.getInstance().print("INFO: Containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
                     containersToStart = this.maxBootsInLoop;
                 }
 
-                Debugger.getInstance().debug("POSITIVE SCORE - " + runningWorkers + " active workers, + " + containersToStart + " containers to start. Score " + containerScore,this.getClass());
+                if (containersToStart == 0) {
+                    Debugger.getInstance().debug("#POSITIVE SCORE: " + runningWorkers + " active workers, No containers to boot up (MAX_CONTAINERS = "+ this.maxContainers +").",this.getClass());
+                } else {
+                    Debugger.getInstance().debug("#POSITIVE SCORE: " + runningWorkers + " active workers, + " + containersToStart + " containers to start.",this.getClass());
+                }
 
                 this.addContainers(containersToStart);
                 break;
@@ -247,13 +254,15 @@ public class ElasticBalancer {
     }
 
     private void addContainers(int howMany) {
-        Debugger.getInstance().print("Adding " + howMany + " container",this.getClass());
+        if (howMany == 0) {return;}
+        Debugger.getInstance().debug("Booting " + howMany + " container..",this.getClass());
         this.getContainerManager().startContainers(howMany);
         Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",howMany);
     }
 
     private void removeContainers(int howMany) {
-        Debugger.getInstance().print("Killing " + howMany + " containers",this.getClass());
+        if (howMany == 0) {return;}
+        Debugger.getInstance().debug("Removing " + howMany + " container..",this.getClass());
         this.getContainerManager().killContainers(howMany);
         Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",howMany);
     }
