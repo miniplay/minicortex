@@ -176,7 +176,11 @@ public class ElasticBalancer {
             // Negative number. Remove containers case
             case -1:
 
-                if((runningWorkers - containerScore) <= this.minContainers) containerScore = this.minContainers;
+                // CASE: Willing to remove more containers than the minimum set
+                if((runningWorkers - containerScore) < this.minContainers) {
+                    containerScore = this.minContainers;
+                }
+
                 Integer containersToKill = Math.abs(runningContainers - containerScore);
 
                 if(containersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
@@ -203,8 +207,12 @@ public class ElasticBalancer {
             // Positive number. Provision containers case
             case 1:
 
-                if((containerScore) >= this.maxContainers) containerScore = this.maxContainers;
+                if((runningWorkers + containerScore) >= this.maxContainers) {
+                    containerScore = this.maxContainers;
+                }
+
                 Integer containersToStart = Math.abs(containerScore - runningContainers);
+
                 if(containersToStart > this.maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
                     Debugger.getInstance().print("## INFO: Containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
                     containersToStart = this.maxBootsInLoop;

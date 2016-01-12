@@ -22,7 +22,7 @@ public class TestObserver extends AbstractObserver {
         if (!config.isTestQueueMode()) {return;}
 
         int workerQueuedJobs = ElasticBalancer.getInstance().workers_queued_jobs.get();
-        int newQueueValue = randInt(1,30);
+        int newQueueValue = randInt(1,15);
 
         System.out.println(LOG_PREPEND + "\t"
                 + " NEW [WORKER_QUEUED_JOBS] \t" + newQueueValue
