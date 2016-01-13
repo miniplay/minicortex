@@ -31,6 +31,7 @@ public class ElasticBalancer {
     private Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
 
+    /* Elastic Balancer Limits */
     private Integer maxContainers = 2;
     private Integer minContainers = 1;
     private Integer maxBootsInLoop = 1;
@@ -42,7 +43,7 @@ public class ElasticBalancer {
     public AtomicInteger workers = new AtomicInteger();
     public AtomicInteger workers_queued_jobs = new AtomicInteger();
 
-    /* Elastic balancer config */
+    /* Elastic balancer claonfig */
     public ScheduledExecutorService balancerThreadPool = Executors.newScheduledThreadPool(2);
     Runnable balancerRunnable = null;
 
@@ -175,7 +176,10 @@ public class ElasticBalancer {
             // Negative number. Remove containers case
             case -1:
 
-                Integer containersToKill = Math.abs(containerScore);
+                // Get containers scheduled kill
+                Integer containersScheduledKill = this.getContainerManager().containersScheduledStop.size();
+                Integer containersToKill = Math.abs(containerScore) - containersScheduledKill;
+                if(containersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledKill+" containers scheduled kill, taking off from "+containersToKill+" containers to kill",this.getClass());
 
                 // CASE: Willing to remove more containers than the minimum set
                 if((runningWorkers - containerScore) < this.minContainers) {
@@ -206,7 +210,11 @@ public class ElasticBalancer {
             // Positive number. Provision containers case
             case 1:
 
-                Integer containersToStart = Math.abs(containerScore);
+                // Get containers scheduled start
+                Integer containersScheduledStart = this.getContainerManager().containersScheduledStart.size();
+                Integer containersToStart = Math.abs(containerScore) - containersScheduledStart;
+                if(containersScheduledStart > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledStart+" containers scheduled start, taking off from "+containersToStart+" containers to start",this.getClass());
+
 
                 if((runningWorkers + containerScore) > this.maxContainers) {
                     containersToStart = this.maxContainers - runningWorkers;
