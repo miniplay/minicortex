@@ -1,4 +1,4 @@
-package com.miniplay.minicortex.modules.docker;
+package com.miniplay.minicortex.modules.worker.drivers.dockermachine;
 
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.ConfigManager;
@@ -28,8 +28,8 @@ public class ProvisionThread extends Thread {
             String randomString =  new BigInteger(130, random).toString(32);
 
             // Provision container with random name
-            String containerName = ConfigManager.getConfig().DOCKER_CONTAINER_HOSTNAME_BASENAME + randomString.substring(2,7);
-            ElasticBalancer.getInstance().getContainerManager().provisionContainer(containerName);
+            String containerName = ConfigManager.getConfig().DOCKER_MACHINE_CONTAINER_HOSTNAME_BASENAME + randomString.substring(2,7);
+            ElasticBalancer.getInstance().getWorkerManager().getWorkerDriver().provisionWorker(containerName);
 
         } catch (InvalidProvisionParams e) {
             Debugger.getInstance().print("Error provisioning machine, caused by: " + e.getMessage(), this.getClass());

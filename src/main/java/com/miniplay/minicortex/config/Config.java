@@ -6,10 +6,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 import com.miniplay.config.ConfigBeacon;
+import org.yaml.snakeyaml.util.ArrayStack;
 
 
 public class Config {
@@ -32,35 +34,50 @@ public class Config {
     /* GENERAL */
     public boolean DEBUG = false;
     public boolean TESTQUEUEMODE = false;
+    public String WORKER_DRIVER = "";
+    public ArrayList<String> ENABLED_OBSERVERS = new ArrayList<String>();
 
-    /* DOCKER */
-    public String DOCKER_DEFAULT_DRIVER = "amazonec2";
-    public Integer DOCKER_MIN_CONTAINERS = 1;
-    public Integer DOCKER_MAX_CONTAINERS = 10;
-    public Integer DOCKER_MAX_BOOTS_IN_LOOP = null;
-    public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
-    public String DOCKER_CONTAINER_HOSTNAME_BASENAME = "worker-";
-    public String DOCKER_KILL_MODE = null;
-    public String DOCKER_SOFT_KILL_PATH = null;
-    public String DOCKER_SOFT_KILL_FILENAME = null;
+    /* DOCKER MACHINE */
+    public String DOCKER_MACHINE_DEFAULT_DRIVER = "amazonec2";
+    public Integer DOCKER_MACHINE_MIN_CONTAINERS = 1;
+    public Integer DOCKER_MACHINE_MAX_CONTAINERS = 10;
+    public Integer DOCKER_MACHINE_MAX_BOOTS_IN_LOOP = null;
+    public Integer DOCKER_MACHINE_MAX_SHUTDOWNS_IN_LOOP = null;
+    public String DOCKER_MACHINE_CONTAINER_HOSTNAME_BASENAME = "worker-";
+    public String DOCKER_MACHINE_KILL_MODE = null;
+    public String DOCKER_MACHINE_SOFT_KILL_PATH = null;
+    public String DOCKER_MACHINE_SOFT_KILL_FILENAME = null;
 
     /* AMAZON EC2 DOCKER DRIVER */
-    public String AMAZONEC2_REGION = "";
-    public String AMAZONEC2_ACCESS_KEY = "";
-    public String AMAZONEC2_SECRET_KEY = "";
-    public String AMAZONEC2_VPC_ID = "";
-    public String AMAZONEC2_ZONE = "";
-    public String AMAZONEC2_SSH_USER = "";
-    public String AMAZONEC2_INSTANCE_TYPE = "";
-    public String AMAZONEC2_AMI = "";
-    public String AMAZONEC2_SUBNET_ID = "";
-    public String AMAZONEC2_SECURITY_GROUP = "";
-    public Boolean AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_REGION = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_ACCESS_KEY = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_SECRET_KEY = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_VPC_ID = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_ZONE = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_SSH_USER = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_INSTANCE_TYPE = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_AMI = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_SUBNET_ID = "";
+    public String DOCKER_MACHINE_DRIVER_AMAZONEC2_SECURITY_GROUP = "";
+    public Boolean DOCKER_MACHINE_DRIVER_AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
+
+    /* BASIC DOCKER CONTAINERS */
+    public String DOCKER_IMAGE = "";
+    public String DOCKER_PORTS = "";
+    public String DOCKER_BASENAME = "";
+    public HashMap<String, Object> DOCKER_ENV_VARS = new HashMap<String, Object>();
+    public Integer DOCKER_MAX_CONTAINERS = null;
+    public Integer DOCKER_MIN_CONTAINERS = null;
+    public Integer DOCKER_MAX_BOOTS_IN_LOOP = null;
+    public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
 
     /* ELASTIC BALANCER */
     public Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
     public Integer EB_TOLERANCE_THRESHOLD = 3;
     public Integer EB_SHUTDOWN_MINS_LOCK = 3;
+
+    /* QUEUE */
+    public String OBSERVER_QUEUE_FEED_URL = null;
 
     /* STATSD */
     public String STATSD_HOST = "";

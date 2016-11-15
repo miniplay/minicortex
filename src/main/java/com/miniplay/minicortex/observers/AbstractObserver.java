@@ -1,5 +1,7 @@
 package com.miniplay.minicortex.observers;
 
+import com.miniplay.minicortex.exceptions.DependenciesNotInstalled;
+
 /**
  * Created by vxc on 9/12/15.
  */
@@ -11,7 +13,7 @@ public abstract class AbstractObserver {
 
     public long secsIntervalSpan = 0L;
 
-    public abstract void runObserver();
+    public abstract void runObserver() throws Exception;
 
     public abstract void setConfig();
 
@@ -19,11 +21,15 @@ public abstract class AbstractObserver {
         setConfig();
     }
 
-    public Runnable getRunnable() {
+    public Runnable getRunnable() throws Exception {
         if (runnableInstance == null){
             runnableInstance = new Runnable() {
                 public void run() {
-                    runObserver();
+                    try {
+                        runObserver();
+                    } catch(Exception e) {
+                        System.out.println("Exception while running observer: " + e.getMessage());
+                    }
                 }
             };
         }
@@ -39,5 +45,7 @@ public abstract class AbstractObserver {
     public void setObserverManager(ObserverManager observerManager) {
         this.observerManager = observerManager;
     }
+
+    private void checkDependencies() throws DependenciesNotInstalled { }
 
 }

@@ -1,6 +1,5 @@
 package com.miniplay.minicortex.server;
 
-import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
@@ -10,10 +9,7 @@ import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 import com.miniplay.minicortex.observers.ObserverManager;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  *
@@ -31,21 +27,8 @@ public class CortexServer {
      * CortexServer constructor
      */
     public CortexServer() throws DependenciesNotInstalled {
-        this.checkDependencies();
-
         // Load app config
         this.configInstance = ConfigManager.getConfig();
-    }
-
-    /**
-     * Check if docker & docker-machine are installed, if not throw exception and exit.
-     */
-    private void checkDependencies() throws DependenciesNotInstalled {
-        try {
-            CommandExecutor.getInstance().execute("docker-machine help");
-        }catch(IOException e) {
-            throw new DependenciesNotInstalled("Package 'docker-machine' is not installed, minicortex cannot run without it");
-        }
     }
 
     /**
@@ -62,8 +45,8 @@ public class CortexServer {
             throw new Exception("Elastic Balancer not loaded!");
         }
 
-        // Provision containers if needed
-        elasticBalancer.triggerProvisionContainers();
+        // Provision workers if needed
+        elasticBalancer.triggerProvisionWorkers();
 
         // All OK, Run executors!
         Debugger.getInstance().printOutput(" Server started!");
@@ -79,10 +62,15 @@ public class CortexServer {
         ArrayList<String> observerNames = ClassHelpers.getClassNamesFromPackage(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME);
         System.out.println("CLASS NAMES IN PACKAGE: " + observerNames);
         for (String observerClassName : observerNames) {
-            try{
-                AbstractObserver loadedObserver = ClassHelpers.instantiateClass(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME + "." + observerClassName, AbstractObserver.class);
-                observerManager.add(loadedObserver);
-            }catch (Exception e) { /* Fail silently */}
+            if(this.configInstance.ENABLED_OBSERVERS.contains(observerClassName)) {
+                try{
+                    AbstractObserver loadedObserver = ClassHelpers.instantiateClass(this.configInstance.CUSTOM_OBSERVERS_PACKAGE_NAME + "." + observerClassName, AbstractObserver.class);
+                    observerManager.add(loadedObserver);
+                }catch (Exception e) { /* Fail silently */}
+            } else {
+                Debugger.getInstance().printOutput(" Observer ["+observerClassName+"] not scheduled. Reason: Not enabled in config");
+            }
+
 
         }
 

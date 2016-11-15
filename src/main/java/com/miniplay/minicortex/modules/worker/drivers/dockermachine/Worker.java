@@ -1,17 +1,14 @@
-package com.miniplay.minicortex.modules.docker;
+package com.miniplay.minicortex.modules.worker.drivers.dockermachine;
 
 import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
 import com.miniplay.common.Stats;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
+import com.miniplay.minicortex.modules.worker.drivers.AbstractWorker;
 
 import java.io.IOException;
 
-/**
- *
- * Created by ret on 7/12/15.
- */
-public class Container {
+public class Worker extends AbstractWorker {
 
     public static final String STATUS_RUNNING = "Running";
     public static final String STATUS_PAUSED = "Paused";
@@ -26,6 +23,7 @@ public class Container {
     private static final String ACTION_KILL = "kill";
     private static final String ACTION_RM = "rm";
     private static final String ACTION_CREATE = "create";
+    private final DockerMachineDriver driverInstance;
 
 
     protected String name = null;
@@ -35,13 +33,15 @@ public class Container {
 
 
     /**
-     * Container Constructor
+     * Worker Constructor
      * @param name String
      * @param driver String
      * @param state String
      * @param url String
      */
-    public Container(String name, String driver, String state, String url) {
+    public Worker(DockerMachineDriver driverInstance, String name, String driver, String state, String url) {
+        super(name,state);
+        this.driverInstance = driverInstance;
         this.name = name;
         this.driver = driver;
         this.state = state;
@@ -50,51 +50,51 @@ public class Container {
 
 
     /**
-     * Container actions------------------------------------------------------------------------------------------------
+     * Worker actions------------------------------------------------------------------------------------------------
      */
 
 
     /**
-     * Start container
+     * Start worker
      */
     public void start() {
-        Debugger.getInstance().print("Container #" + this.getName() + " is going to start...",this.getClass());
+        Debugger.getInstance().print("Worker #" + this.getName() + " is going to start...",this.getClass());
         this.changeState(ACTION_START);
         if(Stats.getInstance().isEnabled()) {
-            Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.start");
+            Stats.getInstance().get().increment("minicortex.elastic_balancer.workers.worker.start");
         }
-        // Add container to scheduled stop
-        ElasticBalancer.getInstance().getContainerManager().containersScheduledStart.put(this.getName(),this);
+        // Add worker to scheduled stop
+        driverInstance.workersScheduledStart.put(this.getName(),this);
     }
 
     /**
-     * Kill container (stop)
+     * Kill worker (stop)
      */
     public void kill() {
-        String killMode = ElasticBalancer.getInstance().getContainerManager().getConfig().DOCKER_KILL_MODE;
-        Debugger.getInstance().print("Container #" + this.getName() + " is being ["+killMode+"] killed",this.getClass());
+        String killMode = ElasticBalancer.getInstance().getWorkerManager().getWorkerDriver().getConfig().DOCKER_MACHINE_KILL_MODE;
+        Debugger.getInstance().print("Worker #" + this.getName() + " is being ["+killMode+"] killed",this.getClass());
         if(killMode.toUpperCase().equals("SOFT")) {
             this.softKill();
             if(Stats.getInstance().isEnabled()) {
-                Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.softkill");
+                Stats.getInstance().get().increment("minicortex.elastic_balancer.workers.worker.softkill");
             }
         } else {
             // Hard kill the machine, the worker would need to handle the shutdown sigterm
             this.changeState(ACTION_KILL);
             if(Stats.getInstance().isEnabled()) {
-                Stats.getInstance().get().increment("minicortex.elastic_balancer.containers.container.hardkill");
+                Stats.getInstance().get().increment("minicortex.elastic_balancer.workers.worker.hardkill");
             }
         }
-        // Add container to scheduled stop
-        ElasticBalancer.getInstance().getContainerManager().containersScheduledStop.put(this.getName(),this);
+        // Add worker to scheduled stop
+        driverInstance.workersScheduledStop.put(this.getName(),this);
     }
 
     /**
-     * Soft KILL a container (this touche's a file into the container and the worker would autokill itself when he can.
+     * Soft KILL a worker (this touche's a file into the worker and the worker would autokill itself when he can.
      */
     private void softKill() {
-        String directoryPath = ElasticBalancer.getInstance().getContainerManager().getConfig().DOCKER_SOFT_KILL_PATH;
-        String dieFileName = ElasticBalancer.getInstance().getContainerManager().getConfig().DOCKER_SOFT_KILL_FILENAME;
+        String directoryPath = ElasticBalancer.getInstance().getWorkerManager().getWorkerDriver().getConfig().DOCKER_MACHINE_SOFT_KILL_PATH;
+        String dieFileName = ElasticBalancer.getInstance().getWorkerManager().getWorkerDriver().getConfig().DOCKER_MACHINE_SOFT_KILL_FILENAME;
 
         // Check if directory includes / at the end, if not append it
         String lastCharacterOfPath = directoryPath.substring(directoryPath.length() - 1);
@@ -114,14 +114,14 @@ public class Container {
     }
 
     /**
-     * Remove container (also terminates the instance in AWS)
+     * Remove worker (also terminates the instance in AWS)
      */
     public void remove() {
         this.changeState(ACTION_RM);
     }
 
     /**
-     * Change the container state (start|kill|rm...)
+     * Change the worker state (start|kill|rm...)
      * @param action String
      */
     private void changeState(String action) {

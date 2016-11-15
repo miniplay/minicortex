@@ -12,7 +12,7 @@ public class Debugger {
 
     public static final String PREPEND_OUTPUT = "> CortexServer: ";
     public static final String PREPEND_OUTPUT_OBSERVERS = "> Observers: ";
-    public static final String PREPEND_OUTPUT_DOCKER = "> ContainerManager: ";
+    public static final String PREPEND_OUTPUT_DOCKER = "> DockerMachineDriver: ";
     public static final String PREPEND_OUTPUT_STATUS_CONTAINERS = "> Containers Status: ";
 
     /**

@@ -4,20 +4,13 @@ import com.miniplay.common.Debugger;
 import com.miniplay.common.Stats;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
-import com.miniplay.minicortex.modules.docker.ContainerManager;
-import com.miniplay.minicortex.server.CortexServer;
-import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.miniplay.minicortex.modules.worker.WorkerManager;
 
-import javax.swing.plaf.basic.BasicTreeUI;
 import java.security.InvalidParameterException;
-import java.security.KeyStore;
 import java.text.SimpleDateFormat;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,13 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ElasticBalancer {
 
     /* Elastic Balancer Conf */
-    private Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
+    private Boolean EB_ALLOW_PROVISION_WORKERS = false;
     private Integer EB_TOLERANCE_THRESHOLD = 0;
     public Boolean isLoaded = false;
 
     /* Elastic Balancer Limits */
-    private Integer maxContainers = 2;
-    private Integer minContainers = 1;
+    private Integer maxWorkers = 2;
+    private Integer minWorkers = 1;
     private Integer maxBootsInLoop = 1;
     private Integer maxShutdownsInLoop = 1;
     private Integer minsShutdownLocked = 3;
@@ -50,7 +43,7 @@ public class ElasticBalancer {
 
 
     /* Modules */
-    private ContainerManager containerManager = null;
+    private WorkerManager workerManager = null;
 
 
     /**
@@ -78,8 +71,8 @@ public class ElasticBalancer {
         // Load & validate config
         this.loadConfig();
 
-        // Load Docker config
-        this.containerManager = new ContainerManager(this);
+        // Load WorkerManager config
+        this.workerManager = new WorkerManager(this);
 
         // Start Balancer runnable
         this.startBalancerRunnable();
@@ -91,24 +84,24 @@ public class ElasticBalancer {
 
     }
 
-    public void triggerProvisionContainers() {
-        if(this.EB_ALLOW_PROVISION_CONTAINERS) { // Provision containers only if enabled in config
-            Debugger.getInstance().printOutput("Triggered Container Provision...");
-            // Force first manual containers load
-            getContainerManager().loadContainers();
-            Integer currentContainers = getContainerManager().getAllContainers().size();
-            Integer maxContainers = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
+    public void triggerProvisionWorkers() {
+        if(this.EB_ALLOW_PROVISION_WORKERS) { // Provision workers only if enabled in config
+            Debugger.getInstance().printOutput("Triggered Worker Provision...");
+            // Force first manual workers load
+            getWorkerManager().getWorkerDriver().loadWorkers();
+            Integer currentWorkers = getWorkerManager().getWorkerDriver().getAllWorkers().size();
+            Integer maxWorkers = getWorkerManager().getWorkerDriver().getMaxWorkers();
 
-            Debugger.getInstance().printOutput("Current containers " + currentContainers + ", Max containers " + maxContainers);
+            Debugger.getInstance().printOutput("Current containers " + currentWorkers + ", Max containers " + maxWorkers);
 
-            if(maxContainers > currentContainers) {
-                Integer containersToProvision = maxContainers - currentContainers;
-                if(containersToProvision > ConfigManager.getConfig().DOCKER_MAX_CONTAINERS) {
+            if(maxWorkers > currentWorkers) {
+                Integer containersToProvision = maxWorkers - currentWorkers;
+                if(containersToProvision > maxWorkers) {
                     Debugger.getInstance().printOutput("MAX provision containers reached!");
-                    containersToProvision = ConfigManager.getConfig().DOCKER_MAX_CONTAINERS;
+                    containersToProvision = maxWorkers;
                 }
                 Debugger.getInstance().printOutput("Loading "+containersToProvision + " new containers");
-                getContainerManager().provisionContainers(containersToProvision);
+                getWorkerManager().getWorkerDriver().provisionWorkers(containersToProvision);
             }
         }
     }
@@ -118,7 +111,7 @@ public class ElasticBalancer {
         System.out.println(configInstance.getElasticBalancerConfig());
 
         // Set if the ElasticBalancer is allowed to provision new containers
-        this.EB_ALLOW_PROVISION_CONTAINERS = configInstance.EB_ALLOW_PROVISION_CONTAINERS;
+        this.EB_ALLOW_PROVISION_WORKERS = configInstance.EB_ALLOW_PROVISION_CONTAINERS;
 
         // Set the tolerance threshold for the ElasticBalancer
         if(configInstance.EB_TOLERANCE_THRESHOLD > 0) {
@@ -127,10 +120,10 @@ public class ElasticBalancer {
             throw new InvalidParameterException("EB_TOLERANCE_THRESHOLD parameter does not exist");
         }
 
-        this.maxContainers = configInstance.DOCKER_MAX_CONTAINERS;
-        this.minContainers = configInstance.DOCKER_MIN_CONTAINERS;
-        this.maxBootsInLoop = configInstance.DOCKER_MAX_BOOTS_IN_LOOP;
-        this.maxShutdownsInLoop = configInstance.DOCKER_MAX_SHUTDOWNS_IN_LOOP;
+        this.maxWorkers = getWorkerManager().getWorkerDriver().getMaxWorkers(); // configInstance.DOCKER_MACHINE_MAX_CONTAINERS;
+        this.minWorkers = getWorkerManager().getWorkerDriver().getMinWorkers(); //configInstance.DOCKER_MACHINE_MIN_CONTAINERS;
+        this.maxBootsInLoop = getWorkerManager().getWorkerDriver().getMaxBootsInLoop(); //configInstance.DOCKER_MACHINE_MAX_BOOTS_IN_LOOP;
+        this.maxShutdownsInLoop = getWorkerManager().getWorkerDriver().getMaxShutdownsInLoop(); //configInstance.DOCKER_MACHINE_MAX_SHUTDOWNS_IN_LOOP;
         this.minsShutdownLocked = configInstance.EB_SHUTDOWN_MINS_LOCK;
 
     }
@@ -149,22 +142,22 @@ public class ElasticBalancer {
             return balanceScore;
         } catch(Exception e) { // If we have any exception return the min number of containers set
             e.printStackTrace();
-            return ConfigManager.getConfig().DOCKER_MIN_CONTAINERS;
+            return minWorkers;
         }
     }
 
     /**
-     * Elastic balance containers based on the calculated balance score
+     * Elastic balance workers based on the calculated balance score
      * @param balanceScore Integer
      */
-    private void elasticBalanceContainers(Integer balanceScore) {
+    private void elasticBalanceWorkers(Integer balanceScore) { // @ TODO: Have a look at this, some variables overlapped when refactoring!!
         Config configInstance = ConfigManager.getConfig();
-        Integer runningWorkers = this.workers.get();
-        Integer runningContainers = this.getContainerManager().getRunningContainers().size();
-        Integer containerScore = configInstance.DOCKER_MIN_CONTAINERS; // Equaling to minimum
+        Integer runningWorkersFromQueue = this.workers.get();
+        Integer runningWorkers = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
+        Integer containerScore = minWorkers; // Equaling to minimum
 
-        if(runningContainers.intValue() != runningWorkers.intValue()) {
-            Debugger.getInstance().print("Workers & Containers doesn't match [ "+runningWorkers+" Workers vs "+runningContainers+" Containers ]",this.getClass());
+        if(runningWorkersFromQueue.intValue() != runningWorkers.intValue()) {
+            Debugger.getInstance().print("Workers & Workers doesn't match [ "+runningWorkersFromQueue+" Workers From Queue vs "+runningWorkers+" Workers ]",this.getClass());
         }
 
         if (!this.checkMinimumBalanceRequirements()) {return;}
@@ -177,29 +170,29 @@ public class ElasticBalancer {
             case -1:
 
                 // Get containers scheduled kill
-                Integer containersScheduledKill = this.getContainerManager().containersScheduledStop.size();
+                Integer containersScheduledKill = this.getWorkerManager().getWorkerDriver().workersScheduledStop.size();
                 Integer containersToKill = Math.abs(containerScore) - containersScheduledKill;
                 if(containersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledKill+" containers scheduled kill, taking off from "+containersToKill+" containers to kill",this.getClass());
 
                 // CASE: Willing to remove more containers than the minimum set
-                if((runningWorkers - containerScore) < this.minContainers) {
-                    containersToKill = runningWorkers - this.minContainers;
+                if((runningWorkers - containerScore) < this.minWorkers) {
+                    containersToKill = runningWorkers - this.minWorkers;
                 }
 
-                if(containersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MAX_SHUTDOWNS_IN_LOOP
-                    Debugger.getInstance().print("## INFO: Containers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
+                if(containersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MACHINE_MAX_SHUTDOWNS_IN_LOOP
+                    Debugger.getInstance().print("## INFO: Workers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
                     containersToKill = this.maxShutdownsInLoop;
                 }
 
                 // Check if we can remove machines
 
                 if (containersToKill == 0) {
-                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, No containers to remove (MIN_CONTAINERS = "+ this.minContainers +").",this.getClass());
+                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, No containers to remove (MIN_CONTAINERS = "+ this.minWorkers +").",this.getClass());
                 } else {
                     Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, " + containersToKill + " to remove.",this.getClass());
                 }
 
-                this.removeContainers(containersToKill);
+                this.removeWorkers(containersToKill);
                 break;
 
             // Null case. Keep containers number
@@ -211,27 +204,27 @@ public class ElasticBalancer {
             case 1:
 
                 // Get containers scheduled start
-                Integer containersScheduledStart = this.getContainerManager().containersScheduledStart.size();
+                Integer containersScheduledStart = this.getWorkerManager().getWorkerDriver().workersScheduledStart.size();
                 Integer containersToStart = Math.abs(containerScore) - containersScheduledStart;
                 if(containersScheduledStart > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledStart+" containers scheduled start, taking off from "+containersToStart+" containers to start",this.getClass());
 
 
-                if((runningWorkers + containerScore) > this.maxContainers) {
-                    containersToStart = this.maxContainers - runningWorkers;
+                if((runningWorkers + containerScore) > this.maxWorkers) {
+                    containersToStart = this.maxWorkers - runningWorkers;
                 }
 
-                if(containersToStart > this.maxBootsInLoop) { // Check DOCKER_MAX_BOOTS_IN_LOOP
-                    Debugger.getInstance().print("## INFO: Containers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
+                if(containersToStart > this.maxBootsInLoop) { // Check DOCKER_MACHINE_MAX_BOOTS_IN_LOOP
+                    Debugger.getInstance().print("## INFO: Workers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
                     containersToStart = this.maxBootsInLoop;
                 }
 
                 if (containersToStart == 0) {
-                    Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, No containers to boot up (MAX_CONTAINERS = "+ this.maxContainers +").",this.getClass());
+                    Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, No containers to boot up (MAX_CONTAINERS = "+ this.maxWorkers +").",this.getClass());
                 } else {
                     Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, + " + containersToStart + " containers to start.",this.getClass());
                 }
 
-                this.addContainers(containersToStart);
+                this.addWorkers(containersToStart);
                 break;
         }
 
@@ -244,30 +237,30 @@ public class ElasticBalancer {
         /**
          * CASE : Workers present does NOT meet the MIN value
          */
-        if (runningWorkers < this.minContainers) {
-            int containersNeeded = (this.minContainers - runningWorkers);
+        if (runningWorkers < this.minWorkers) {
+            int containersNeeded = (this.minWorkers - runningWorkers);
             int howManyToBoot = 1;
             if (containersNeeded >= this.maxBootsInLoop) {
                 howManyToBoot = this.maxBootsInLoop;
             } else {
                 howManyToBoot = containersNeeded;
             }
-            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are below minimum value (" + this.minContainers + "), Booting up "+howManyToBoot+ " container",this.getClass());
-            this.addContainers(howManyToBoot);
+            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are below minimum value (" + this.minWorkers + "), Booting up "+howManyToBoot+ " container",this.getClass());
+            this.addWorkers(howManyToBoot);
             result = false;
         /**
          * CASE : MORE CONTAINERS THAN MAX VALUE
          */
-        } else if (runningWorkers > this.maxContainers) {
-            int containersNotNeeded = (runningWorkers - this.maxContainers);
+        } else if (runningWorkers > this.maxWorkers) {
+            int containersNotNeeded = (runningWorkers - this.maxWorkers);
             int howManyToRemove = 1;
             if (containersNotNeeded >= this.maxShutdownsInLoop) {
                 howManyToRemove = this.maxShutdownsInLoop;
             } else {
                 howManyToRemove = containersNotNeeded;
             }
-            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are above maximum value (" + this.maxContainers + "), Removing "+howManyToRemove+" container",this.getClass());
-            this.removeContainers(howManyToRemove);
+            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are above maximum value (" + this.maxWorkers + "), Removing "+howManyToRemove+" container",this.getClass());
+            this.removeWorkers(howManyToRemove);
             result = false;
         }
 
@@ -278,10 +271,10 @@ public class ElasticBalancer {
      * Wrapper to Boot-up containers
      * @param howMany integer
      */
-    private void addContainers(int howMany) {
+    private void addWorkers(int howMany) {
         if (howMany == 0) {return;}
         Debugger.getInstance().debug("Booting " + howMany + " container..",this.getClass());
-        this.getContainerManager().startContainers(howMany);
+        this.getWorkerManager().getWorkerDriver().startWorkers(howMany);
         this.refreshShutdownLockTs();
         Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",howMany);
     }
@@ -290,20 +283,20 @@ public class ElasticBalancer {
      * Wrapper to Remove containers
      * @param howMany integer
      */
-    private void removeContainers(int howMany) {
+    private void removeWorkers(int howMany) {
         if (howMany == 0) {return;}
-        if (!this.canShutdownContainer()) {
+        if (!this.canShutdownWorker()) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd 'at' hh:mm:ss");
             String date = sdf.format(this.lastBootTs*1000);
-            Debugger.getInstance().debug("#INFO: Containers can't be removed yet due to  " + this.minsShutdownLocked + " mins lock after last container boot @ "+date,this.getClass());
+            Debugger.getInstance().debug("#INFO: Workers can't be removed yet due to  " + this.minsShutdownLocked + " mins lock after last container boot @ "+date,this.getClass());
             return;
         }
         Debugger.getInstance().debug("Removing " + howMany + " container..",this.getClass());
-        this.getContainerManager().killContainers(howMany);
+        this.getWorkerManager().getWorkerDriver().killWorkers(howMany);
         Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",howMany);
     }
 
-    private boolean canShutdownContainer() {
+    private boolean canShutdownWorker() {
         long nowTs = System.currentTimeMillis() / 1000L;
         return (nowTs >= this.lastBootTs + (this.minsShutdownLocked*60 ) );
     }
@@ -316,14 +309,14 @@ public class ElasticBalancer {
      * Recalculate containers needed for CortexServer at this moment
      */
     private void balance() {
-        Integer registeredContainers = this.getContainerManager().getAllContainers().size();
-        Integer minContainers = ConfigManager.getConfig().DOCKER_MIN_CONTAINERS;
-        if(registeredContainers < minContainers) {
-            Debugger.getInstance().printOutput("Registered containers ("+registeredContainers+") don't reach the minimum ("+minContainers+"), ElasticBalance PAUSED!");
+        Integer registeredWorkers = this.getWorkerManager().getWorkerDriver().getAllWorkers().size();
+        Integer minWorkers = getWorkerManager().getWorkerDriver().getMinWorkers();
+        if(registeredWorkers < minWorkers) {
+            Debugger.getInstance().printOutput("Registered containers ("+registeredWorkers+") don't reach the minimum ("+minWorkers+"), ElasticBalance PAUSED!");
         } else {
             Debugger.getInstance().print("Calculating balancer score...",this.getClass());
             Integer balanceScore = calculateBalancerScore();
-            elasticBalanceContainers(balanceScore);
+            elasticBalanceWorkers(balanceScore);
         }
     }
 
@@ -342,9 +335,9 @@ public class ElasticBalancer {
     }
 
     /**
-     * @return ContainerManager
+     * @return WorkerManager
      */
-    public ContainerManager getContainerManager() {
-        return containerManager;
+    public WorkerManager getWorkerManager() {
+        return workerManager;
     }
 }
