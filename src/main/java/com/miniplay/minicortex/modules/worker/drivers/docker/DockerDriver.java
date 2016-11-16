@@ -110,7 +110,18 @@ public class DockerDriver extends AbstractWorkerDriver {
         try {
 
             // @TODO: Load workers
-            dockerClient.listContainers(DockerClient.ListContainersParam.withLabel("environment",this.dockerEnvironment));
+            List<Container> currentContainers = dockerClient.listContainers(
+                    DockerClient.ListContainersParam.allContainers(),
+                    DockerClient.ListContainersParam.withLabel("environment", this.dockerEnvironment),
+                    DockerClient.ListContainersParam.withLabel("service", this.dockerServiceName));
+
+            Debugger.getInstance().print("Loaded " + currentContainers.size() + " containers matching ENV [" + this.dockerEnvironment + "] and Service [" + this.dockerServiceName,this.getClass());
+
+            for (Container container: currentContainers) {
+                // @TODO this.registerWorker(container.id(),container.id(),container.image(),container.ports(),)
+            }
+
+
 
 
 
@@ -156,7 +167,7 @@ public class DockerDriver extends AbstractWorkerDriver {
 
             final HostConfig.Builder hostConfigBuilder = HostConfig.builder();
 
-            // Set exposed ports
+            // Set exposed ports @TODO
 //            for (String volume:this.getConfig().DOCKER_PORTS) {
 //                hostConfigBuilder.portb(volume);
 //            }
