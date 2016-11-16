@@ -37,20 +37,22 @@ public class DockerObserver extends AbstractObserver {
 
         DockerDriver currentDriver = (DockerDriver) ElasticBalancer.getInstance().getWorkerManager().getWorkerDriver();
 
-        System.out.println( LOG_PREPEND+ "Loading containers...");
+        System.out.println( LOG_PREPEND+ "Loading workers (docker containers)...");
 
-        currentDriver.loadContainers();
+        currentDriver.loadWorkers();
 
         Integer allContainers = currentDriver.getAllWorkers().size();
         Integer runningContainers = currentDriver.getRunningWorkers().size();
         Integer exitedContainers = currentDriver.getStoppedWorkers().size();
         Integer pausedContainers = currentDriver.getPausedWorkers().size();
+        Integer createdContainers = currentDriver.getCreatedWorkers().size();
 
         System.out.println(LOG_PREPEND + "\t" +
                 allContainers + " [REGISTER] \t" +
                 runningContainers + " [RUNNING] \t" +
                 exitedContainers + " [EXITED] \t" +
-                pausedContainers + " [PAUSED] \t"
+                pausedContainers + " [PAUSED] \t" +
+                createdContainers + " [CREATED] \t"
         );
 
         if(Stats.getInstance().isEnabled()) {
@@ -59,6 +61,7 @@ public class DockerObserver extends AbstractObserver {
             Stats.getInstance().get().gauge("minicortex.observers.docker.running", runningContainers);
             Stats.getInstance().get().gauge("minicortex.observers.docker.exited", exitedContainers);
             Stats.getInstance().get().gauge("minicortex.observers.docker.paused", pausedContainers);
+            Stats.getInstance().get().gauge("minicortex.observers.docker.created", createdContainers);
         }
 
     }

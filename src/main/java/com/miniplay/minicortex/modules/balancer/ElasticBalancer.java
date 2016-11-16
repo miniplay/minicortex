@@ -66,15 +66,18 @@ public class ElasticBalancer {
      * ElasticBalancer constructor
      */
     private ElasticBalancer() {
-        Debugger.getInstance().printOutput("Loading Elastic Balancer...");
-
-        // Load & validate config
-        this.loadConfig();
+        Debugger.getInstance().print("Loading Elastic Balancer",this.getClass());
 
         // Load WorkerManager config
         this.workerManager = new WorkerManager(this);
+        Debugger.getInstance().print("Loading Elastic Balancer: WorkerManager OK",this.getClass());
+
+        // Load & validate config
+        this.loadConfig();
+        Debugger.getInstance().print("Loading Elastic Balancer: Config OK",this.getClass());
 
         // Start Balancer runnable
+        Debugger.getInstance().print("Loading Elastic Balancer: Starting Balancer Runnable",this.getClass());
         this.startBalancerRunnable();
 
         // All OK!
@@ -92,16 +95,16 @@ public class ElasticBalancer {
             Integer currentWorkers = getWorkerManager().getWorkerDriver().getAllWorkers().size();
             Integer maxWorkers = getWorkerManager().getWorkerDriver().getMaxWorkers();
 
-            Debugger.getInstance().printOutput("Current containers " + currentWorkers + ", Max containers " + maxWorkers);
+            Debugger.getInstance().printOutput("Current workers " + currentWorkers + ", Max workers " + maxWorkers);
 
             if(maxWorkers > currentWorkers) {
-                Integer containersToProvision = maxWorkers - currentWorkers;
-                if(containersToProvision > maxWorkers) {
-                    Debugger.getInstance().printOutput("MAX provision containers reached!");
-                    containersToProvision = maxWorkers;
+                Integer workersToProvision = maxWorkers - currentWorkers;
+                if(workersToProvision > maxWorkers) {
+                    Debugger.getInstance().printOutput("MAX provision workers reached!");
+                    workersToProvision = maxWorkers;
                 }
-                Debugger.getInstance().printOutput("Loading "+containersToProvision + " new containers");
-                getWorkerManager().getWorkerDriver().provisionWorkers(containersToProvision);
+                Debugger.getInstance().printOutput("Loading "+workersToProvision + " new workers");
+                getWorkerManager().getWorkerDriver().provisionWorkers(workersToProvision);
             }
         }
     }
@@ -110,8 +113,8 @@ public class ElasticBalancer {
         Config configInstance = ConfigManager.getConfig();
         System.out.println(configInstance.getElasticBalancerConfig());
 
-        // Set if the ElasticBalancer is allowed to provision new containers
-        this.EB_ALLOW_PROVISION_WORKERS = configInstance.EB_ALLOW_PROVISION_CONTAINERS;
+        // Set if the ElasticBalancer is allowed to provision new workers
+        this.EB_ALLOW_PROVISION_WORKERS = configInstance.EB_ALLOW_PROVISION_WORKERS;
 
         // Set the tolerance threshold for the ElasticBalancer
         if(configInstance.EB_TOLERANCE_THRESHOLD > 0) {
@@ -129,7 +132,7 @@ public class ElasticBalancer {
     }
 
     /**
-     * Calculates the balancer score, this score will be the decision to scale up or down containers
+     * Calculates the balancer score, this score will be the decision to scale up or down workers
      * @return Integer
      */
     private Integer calculateBalancerScore() {
@@ -140,7 +143,7 @@ public class ElasticBalancer {
             Debugger.getInstance().debug("CALCULATED SCORE: " + balanceScore,this.getClass());
             Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.score",balanceScore);
             return balanceScore;
-        } catch(Exception e) { // If we have any exception return the min number of containers set
+        } catch(Exception e) { // If we have any exception return the min number of workers set
             e.printStackTrace();
             return minWorkers;
         }
@@ -154,7 +157,7 @@ public class ElasticBalancer {
         Config configInstance = ConfigManager.getConfig();
         Integer runningWorkersFromQueue = this.workers.get();
         Integer runningWorkers = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
-        Integer containerScore = minWorkers; // Equaling to minimum
+        Integer workerScore = minWorkers; // Equaling to minimum
 
         if(runningWorkersFromQueue.intValue() != runningWorkers.intValue()) {
             Debugger.getInstance().print("Workers & Workers doesn't match [ "+runningWorkersFromQueue+" Workers From Queue vs "+runningWorkers+" Workers ]",this.getClass());
@@ -162,7 +165,7 @@ public class ElasticBalancer {
 
         if (!this.checkMinimumBalanceRequirements()) {return;}
 
-        containerScore = Math.abs(balanceScore);
+        workerScore = Math.abs(balanceScore);
         int scoreSign = Integer.signum(balanceScore);
 
         switch (scoreSign) {
@@ -170,12 +173,12 @@ public class ElasticBalancer {
             case -1:
 
                 // Get containers scheduled kill
-                Integer containersScheduledKill = this.getWorkerManager().getWorkerDriver().workersScheduledStop.size();
-                Integer containersToKill = Math.abs(containerScore) - containersScheduledKill;
-                if(containersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledKill+" containers scheduled kill, taking off from "+containersToKill+" containers to kill",this.getClass());
+                Integer workersScheduledKill = this.getWorkerManager().getWorkerDriver().workersScheduledStop.size();
+                Integer containersToKill = Math.abs(workerScore) - workersScheduledKill;
+                if(workersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+workersScheduledKill+" containers scheduled kill, taking off from "+containersToKill+" containers to kill",this.getClass());
 
                 // CASE: Willing to remove more containers than the minimum set
-                if((runningWorkers - containerScore) < this.minWorkers) {
+                if((runningWorkers - workerScore) < this.minWorkers) {
                     containersToKill = runningWorkers - this.minWorkers;
                 }
 
@@ -197,7 +200,7 @@ public class ElasticBalancer {
 
             // Null case. Keep containers number
             case 0:
-                Debugger.getInstance().debug("--> ZERO SCORE: " + runningWorkers + " active workers, nothing to do. Score " + containerScore,this.getClass());
+                Debugger.getInstance().debug("--> ZERO SCORE: " + runningWorkers + " active workers, nothing to do. Score " + workerScore,this.getClass());
                 break;
 
             // Positive number. Provision containers case
@@ -205,11 +208,11 @@ public class ElasticBalancer {
 
                 // Get containers scheduled start
                 Integer containersScheduledStart = this.getWorkerManager().getWorkerDriver().workersScheduledStart.size();
-                Integer containersToStart = Math.abs(containerScore) - containersScheduledStart;
+                Integer containersToStart = Math.abs(workerScore) - containersScheduledStart;
                 if(containersScheduledStart > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledStart+" containers scheduled start, taking off from "+containersToStart+" containers to start",this.getClass());
 
 
-                if((runningWorkers + containerScore) > this.maxWorkers) {
+                if((runningWorkers + workerScore) > this.maxWorkers) {
                     containersToStart = this.maxWorkers - runningWorkers;
                 }
 

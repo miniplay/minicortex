@@ -4,7 +4,6 @@ import com.miniplay.common.Debugger;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.exceptions.InvalidProvisionParams;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
-import com.miniplay.minicortex.modules.worker.drivers.docker.Worker;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +17,8 @@ abstract public class AbstractWorkerDriver {
     public Boolean isActive = false;
 
     public volatile ConcurrentHashMap<String, AbstractWorker> workers = new ConcurrentHashMap<String, AbstractWorker>();
+    public volatile ConcurrentHashMap<String, AbstractWorker> workersScheduledStart = new ConcurrentHashMap<String, AbstractWorker>();
+    public volatile ConcurrentHashMap<String, AbstractWorker> workersScheduledStop = new ConcurrentHashMap<String, AbstractWorker>();
 
     private Integer minWorkers;
     private Integer maxWorkers;
@@ -41,18 +42,37 @@ abstract public class AbstractWorkerDriver {
      * Getters
      */
 
-    public AbstractWorker getWorker(String name){return null;}
+    /**
+     * @param name String
+     * @return AbstractWorker
+     */
+    abstract public AbstractWorker getWorker(String name);
 
+    /**
+     * @return ArrayList
+     */
     abstract public ArrayList<? extends AbstractWorker> getAllWorkers();
+
+    /**
+     * @return ArrayList
+     */
     abstract public ArrayList<? extends AbstractWorker> getRunningWorkers();
+
+    /**
+     * @return ArrayList
+     */
     abstract public ArrayList<? extends AbstractWorker> getStoppedWorkers();
 
+    /**
+     * @param state String
+     * @return AbstractWorker
+     */
     private AbstractWorker getRandomWorker(String state){return null;}
 
     /**
      * @return config Config
      */
-    public Config getConfig(){return null;}
+    abstract public Config getConfig();
 
     /**
      * @return maxWorkers Integer
@@ -84,12 +104,18 @@ abstract public class AbstractWorkerDriver {
 
 
     /**
+     * Loaders
+     */
+
+    abstract public void loadWorkers();
+
+    private void loadConfig(){}
+
+
+    /**
      * Setters
      */
 
-    public void loadWorkers(){}
-
-    private void loadConfig(){}
 
     /**
      * @param minWorkers Integer
@@ -119,26 +145,42 @@ abstract public class AbstractWorkerDriver {
         this.maxBootsInLoop = maxBootsInLoop;
     }
 
+
     /**
      * Provision and register
      */
 
-    public void loadContainers() {}
+    /**
+     * @param name String
+     * @return Boolean
+     */
+    public Boolean registerWorker(String name) { return false; }
 
-    public Boolean registerWorker(String name, String driver, String state, String url){return null;}
+    /**
+     * @param workerName String
+     * @throws InvalidProvisionParams
+     */
+    abstract public void provisionWorker(String workerName) throws InvalidProvisionParams;
 
-    public void provisionWorker(String workerName) throws InvalidProvisionParams{}
-
-    public void provisionWorkers(Integer workersToProvision){}
+    /**
+     * @param workersToProvision Integer
+     */
+    abstract public void provisionWorkers(Integer workersToProvision);
 
 
     /**
      * actions over workers
      */
 
-    public void killWorkers(Integer workersToKill){}
+    /**
+     * @param workersToKill Integer
+     */
+    abstract public void killWorkers(Integer workersToKill);
 
-    public void startWorkers(Integer workersToStart){}
+    /**
+     * @param workersToStart Integer
+     */
+    abstract public void startWorkers(Integer workersToStart);
 
     private void killRandomWorker(){}
 

@@ -41,8 +41,8 @@ public class DockerMachineObserver extends AbstractObserver {
 
         DockerMachineDriver currentDriver = (DockerMachineDriver) ElasticBalancer.getInstance().getWorkerManager().getWorkerDriver();
 
-        System.out.println( LOG_PREPEND+ "Loading containers...");
-        currentDriver.loadContainers();
+        System.out.println( LOG_PREPEND+ "Loading workers (docker-machine managed AWS Instances)...");
+        currentDriver.loadWorkers();
 
         Integer allContainers = currentDriver.getAllWorkers().size();
         Integer stoppedContainers = currentDriver.getStoppedWorkers().size();

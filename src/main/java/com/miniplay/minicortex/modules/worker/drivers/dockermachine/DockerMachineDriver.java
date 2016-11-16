@@ -61,7 +61,7 @@ public class DockerMachineDriver extends AbstractWorkerDriver {
      * @param name String
      * @return Worker
      */
-    public Worker getWorkerByName(String name) {
+    public Worker getWorker(String name) {
         return this.workers.get(name);
     }
 

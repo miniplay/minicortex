@@ -12,20 +12,23 @@ import java.lang.reflect.InvocationTargetException;
 
 public class WorkerManager {
 
+    public final String DRIVER_CLASSNAME_APPENDIX = "drivers.";
+
     protected ElasticBalancer elasticBalancer = null;
     private Config config = null;
     public Boolean isLoaded = false;
     protected AbstractWorkerDriver workerDriver = null;
 
     /**
-     * DockerMachineDriver constructor
+     * WorkerManager constructor
      * @param elasticBalancer ElasticBalancer
      */
     public WorkerManager(ElasticBalancer elasticBalancer) {
         this.elasticBalancer = elasticBalancer;
         this.loadConfig();
+        this.loadDriver();
 
-        System.out.println(Debugger.PREPEND_OUTPUT + "DockerMachineDriver Loaded OK");
+        System.out.println(Debugger.PREPEND_OUTPUT +  " " + this.config.WORKER_DRIVER + " Loaded OK");
     }
 
     /**
@@ -36,25 +39,31 @@ public class WorkerManager {
         this.isLoaded = true;
     }
 
-    public AbstractWorkerDriver getWorkerDriver() {
-
+    private void loadDriver() {
+        String driverFullPackagePath = this.getClass().getPackage().getName() + "." + this.DRIVER_CLASSNAME_APPENDIX + this.config.WORKER_DRIVER;
         try {
-            Class workerDriverClass = Class.forName(this.config.WORKER_DRIVER);
+            Class workerDriverClass = Class.forName(driverFullPackagePath);
             Constructor workerDriverConstructor = workerDriverClass.getConstructor(ElasticBalancer.class);
             Object workerDriver = workerDriverConstructor.newInstance(elasticBalancer);
+            this.workerDriver = (AbstractWorkerDriver)workerDriver;
 
         } catch(ClassNotFoundException e) {
-            Debugger.getInstance().print("Instance Worker Driver ClassNotFoundException [" + this.config.WORKER_DRIVER + "] - message: " + e.getMessage(),this.getClass());
+            Debugger.getInstance().print("Instance Worker Driver ClassNotFoundException [" + driverFullPackagePath + "] - message: " + e.getMessage(),this.getClass());
         } catch (InstantiationException e) {
-            Debugger.getInstance().print("Instance Worker Driver InstantiationException [" + this.config.WORKER_DRIVER + "] - message: " + e.getMessage(),this.getClass());
+            Debugger.getInstance().print("Instance Worker Driver InstantiationException [" + driverFullPackagePath + "] - message: " + e.getMessage(),this.getClass());
         } catch (IllegalAccessException e) {
-            Debugger.getInstance().print("Instance Worker Driver IllegalAccessException [" + this.config.WORKER_DRIVER + "] - message: " + e.getMessage(),this.getClass());
+            Debugger.getInstance().print("Instance Worker Driver IllegalAccessException [" + driverFullPackagePath + "] - message: " + e.getMessage(),this.getClass());
         } catch (InvocationTargetException e) {
-            Debugger.getInstance().print("Instance Worker Driver InvocationTargetException [" + this.config.WORKER_DRIVER + "] - message: " + e.getMessage(),this.getClass());
+            Debugger.getInstance().print("Instance Worker Driver InvocationTargetException [" + driverFullPackagePath + "] - message: " + e.getMessage(),this.getClass());
         } catch (NoSuchMethodException e) {
-            Debugger.getInstance().print("Instance Worker Driver NoSuchMethodException [" + this.config.WORKER_DRIVER + "] - message: " + e.getMessage(),this.getClass());
+            Debugger.getInstance().print("Instance Worker Driver NoSuchMethodException [" + driverFullPackagePath + "] - message: " + e.getMessage(),this.getClass());
         }
+    }
 
+    public AbstractWorkerDriver getWorkerDriver() {
+        if(workerDriver == null) {
+            loadDriver();
+        }
         return workerDriver;
 
     }

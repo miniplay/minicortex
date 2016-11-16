@@ -62,17 +62,20 @@ public class Config {
     public Boolean DOCKER_MACHINE_DRIVER_AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
 
     /* BASIC DOCKER CONTAINERS */
+    public String DOCKER_SERVICE_NAME = "";
     public String DOCKER_IMAGE = "";
-    public String DOCKER_PORTS = "";
     public String DOCKER_BASENAME = "";
-    public HashMap<String, Object> DOCKER_ENV_VARS = new HashMap<String, Object>();
+    public ArrayList<String> DOCKER_VOLUMES = new ArrayList<String>();
+    public ArrayList<String> DOCKER_PORTS = new ArrayList<String>();
+    public ArrayList<String> DOCKER_ENV_VARS = new ArrayList<String>();
+    public Map<String,String> DOCKER_CONNECTION = new HashMap<String, String>();
     public Integer DOCKER_MAX_CONTAINERS = null;
     public Integer DOCKER_MIN_CONTAINERS = null;
     public Integer DOCKER_MAX_BOOTS_IN_LOOP = null;
     public Integer DOCKER_MAX_SHUTDOWNS_IN_LOOP = null;
 
     /* ELASTIC BALANCER */
-    public Boolean EB_ALLOW_PROVISION_CONTAINERS = false;
+    public Boolean EB_ALLOW_PROVISION_WORKERS = false;
     public Integer EB_TOLERANCE_THRESHOLD = 3;
     public Integer EB_SHUTDOWN_MINS_LOCK = 3;
 

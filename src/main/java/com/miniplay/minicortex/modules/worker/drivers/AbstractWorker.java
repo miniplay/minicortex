@@ -24,23 +24,17 @@ abstract public class AbstractWorker {
     /**
      * Start worker (run)
      */
-    public void start() {}
+    abstract public void start();
 
     /**
      * Kill worker (stop)
      */
-    public void kill() {}
+    abstract public void kill();
 
     /**
      * Remove worker
      */
-    public void remove() {}
-
-    /**
-     * Change the worker state (start|kill|rm...)
-     * @param action String
-     */
-    private void changeState(String action) {}
+    abstract public void remove();
 
 
     /**
