@@ -2,6 +2,7 @@ package com.miniplay.custom.observers;
 import com.google.gson.Gson;
 import com.miniplay.common.Stats;
 import com.miniplay.custom.ObserverHelpers.Queue.StatusMessage;
+import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
 
@@ -17,11 +18,13 @@ import java.net.URL;
  */
 public class QueueObserver extends AbstractObserver {
 
-    public static final String QUEUE_STATUS_URL = "http://api.minijuegos.com/external/monitoring/gearman/jobs?json=1";
+    public static String QUEUE_STATUS_URL = "";
     public Gson gson = new Gson();
     public static final String LOG_PREPEND = "> Queue Observer: ";
 
     public void runObserver() {
+
+        QUEUE_STATUS_URL = ConfigManager.getConfig().OBSERVER_QUEUE_FEED_URL;
 
         System.out.println(LOG_PREPEND + "Updating queue values...");
         String queueStatusOutput = this.fetch();
