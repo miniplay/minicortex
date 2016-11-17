@@ -26,7 +26,7 @@ public class QueueObserver extends AbstractObserver {
 
         QUEUE_STATUS_URL = ConfigManager.getConfig().OBSERVER_QUEUE_FEED_URL;
 
-        System.out.println(LOG_PREPEND + "Updating queue values...");
+        System.out.println(LOG_PREPEND + "Updating queue values... from [" + QUEUE_STATUS_URL + "]");
         String queueStatusOutput = this.fetch();
 
         if(queueStatusOutput != null) { // Only if the queue status fetch returned true
