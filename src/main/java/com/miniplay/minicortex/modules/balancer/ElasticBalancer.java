@@ -160,7 +160,7 @@ public class ElasticBalancer {
         Integer workerScore = minWorkers; // Equaling to minimum
 
         if(runningWorkersFromQueue.intValue() != runningWorkers.intValue()) {
-            Debugger.getInstance().print("Workers & Workers doesn't match [ "+runningWorkersFromQueue+" Workers From Queue vs "+runningWorkers+" Workers ]",this.getClass());
+            Debugger.getInstance().print("Queue Workers & Workers doesn't match [ "+runningWorkersFromQueue+" Workers From Queue vs "+runningWorkers+" Workers ]",this.getClass());
         }
 
         if (!this.checkMinimumBalanceRequirements()) {return;}
@@ -174,28 +174,28 @@ public class ElasticBalancer {
 
                 // Get containers scheduled kill
                 Integer workersScheduledKill = this.getWorkerManager().getWorkerDriver().workersScheduledStop.size();
-                Integer containersToKill = Math.abs(workerScore) - workersScheduledKill;
-                if(workersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+workersScheduledKill+" containers scheduled kill, taking off from "+containersToKill+" containers to kill",this.getClass());
+                Integer WorkersToKill = Math.abs(workerScore) - workersScheduledKill;
+                if(workersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+workersScheduledKill+" containers scheduled kill, taking off from "+WorkersToKill+" containers to kill",this.getClass());
 
                 // CASE: Willing to remove more containers than the minimum set
                 if((runningWorkers - workerScore) < this.minWorkers) {
-                    containersToKill = runningWorkers - this.minWorkers;
+                    WorkersToKill = runningWorkers - this.minWorkers;
                 }
 
-                if(containersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MACHINE_MAX_SHUTDOWNS_IN_LOOP
-                    Debugger.getInstance().print("## INFO: Workers to kill limit reached! Want to kill "+containersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
-                    containersToKill = this.maxShutdownsInLoop;
+                if(WorkersToKill > this.maxShutdownsInLoop) { // Check DOCKER_MACHINE_MAX_SHUTDOWNS_IN_LOOP
+                    Debugger.getInstance().print("## INFO: Workers to kill limit reached! Want to kill "+WorkersToKill+" and MAX is "+ this.maxShutdownsInLoop,this.getClass());
+                    WorkersToKill = this.maxShutdownsInLoop;
                 }
 
                 // Check if we can remove machines
 
-                if (containersToKill == 0) {
-                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, No containers to remove (MIN_CONTAINERS = "+ this.minWorkers +").",this.getClass());
+                if (WorkersToKill == 0) {
+                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, No workers to remove (MIN_WORKERS = "+ this.minWorkers +").",this.getClass());
                 } else {
-                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, " + containersToKill + " to remove.",this.getClass());
+                    Debugger.getInstance().debug("--> NEGATIVE SCORE: " + runningWorkers + " active workers, " + WorkersToKill + " to remove.",this.getClass());
                 }
 
-                this.removeWorkers(containersToKill);
+                this.removeWorkers(WorkersToKill);
                 break;
 
             // Null case. Keep containers number
@@ -206,28 +206,28 @@ public class ElasticBalancer {
             // Positive number. Provision containers case
             case 1:
 
-                // Get containers scheduled start
-                Integer containersScheduledStart = this.getWorkerManager().getWorkerDriver().workersScheduledStart.size();
-                Integer containersToStart = Math.abs(workerScore) - containersScheduledStart;
-                if(containersScheduledStart > 0) Debugger.getInstance().print("## INFO: Found "+containersScheduledStart+" containers scheduled start, taking off from "+containersToStart+" containers to start",this.getClass());
+                // Get workers scheduled start
+                Integer workersScheduledStart = this.getWorkerManager().getWorkerDriver().workersScheduledStart.size();
+                Integer workersToStart = Math.abs(workerScore) - workersScheduledStart;
+                if(workersScheduledStart > 0) Debugger.getInstance().print("## INFO: Found "+workersScheduledStart+" workers scheduled start, taking off from "+workersToStart+" workers to start",this.getClass());
 
 
                 if((runningWorkers + workerScore) > this.maxWorkers) {
-                    containersToStart = this.maxWorkers - runningWorkers;
+                    workersToStart = this.maxWorkers - runningWorkers;
                 }
 
-                if(containersToStart > this.maxBootsInLoop) { // Check DOCKER_MACHINE_MAX_BOOTS_IN_LOOP
-                    Debugger.getInstance().print("## INFO: Workers to start limit reached! Want to boot "+containersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
-                    containersToStart = this.maxBootsInLoop;
+                if(workersToStart > this.maxBootsInLoop) { // Check DOCKER_MACHINE_MAX_BOOTS_IN_LOOP
+                    Debugger.getInstance().print("## INFO: Workers to start limit reached! Want to boot "+workersToStart+" and MAX is "+ this.maxBootsInLoop,this.getClass());
+                    workersToStart = this.maxBootsInLoop;
                 }
 
-                if (containersToStart == 0) {
+                if (workersToStart == 0) {
                     Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, No containers to boot up (MAX_CONTAINERS = "+ this.maxWorkers +").",this.getClass());
                 } else {
-                    Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, + " + containersToStart + " containers to start.",this.getClass());
+                    Debugger.getInstance().debug("--> POSITIVE SCORE: " + runningWorkers + " active workers, + " + workersToStart + " containers to start.",this.getClass());
                 }
 
-                this.addWorkers(containersToStart);
+                this.addWorkers(workersToStart);
                 break;
         }
 

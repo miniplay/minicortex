@@ -89,7 +89,7 @@ public class DockerMachineDriver extends AbstractWorkerDriver {
             this.registerWorkersFromProcessString(workersToAdd);
 
         } catch (Exception e) {
-            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER_MACHINE + "EXCEPTION: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -122,7 +122,7 @@ public class DockerMachineDriver extends AbstractWorkerDriver {
                     successWorkers++;
                 } else {
                     errorWorkers++;
-                    System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "ERROR registering new worker ["+workerName+"]");
+                    System.out.println(Debugger.PREPEND_OUTPUT_DOCKER_MACHINE + "ERROR registering new worker ["+workerName+"]");
                 }
             } catch (Exception e) {
                 errorWorkers++;
@@ -158,7 +158,7 @@ public class DockerMachineDriver extends AbstractWorkerDriver {
 
             return true;
         } catch (Exception e) {
-            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + e.getMessage());
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER_MACHINE + e.getMessage());
             return false;
         }
     }
@@ -255,7 +255,7 @@ public class DockerMachineDriver extends AbstractWorkerDriver {
             }
 
         } catch (IOException e) {
-            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER_MACHINE + "EXCEPTION: " + e.getMessage());
         }
 
     }

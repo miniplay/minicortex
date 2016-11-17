@@ -19,7 +19,7 @@ public class Stats {
 
     public Stats() {
         if(ConfigManager.getConfig().STATSD_HOST != null && ConfigManager.getConfig().STATSD_HOST != null) {
-            statsdClient = new NonBlockingStatsDClient("", ConfigManager.getConfig().STATSD_HOST, ConfigManager.getConfig().STATSD_PORT);
+            statsdClient = new NonBlockingStatsDClient("minicortex_"+ConfigManager.getConfig().SERVICE_NAME, ConfigManager.getConfig().STATSD_HOST, ConfigManager.getConfig().STATSD_PORT);
         } else {
             statsdClient = null;
         }

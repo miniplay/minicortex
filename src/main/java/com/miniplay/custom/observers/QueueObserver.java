@@ -6,6 +6,8 @@ import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
+import com.miniplay.minicortex.server.CortexServer;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,6 +25,7 @@ public class QueueObserver extends AbstractObserver {
     public static final String LOG_PREPEND = "> Queue Observer: ";
 
     public void runObserver() {
+
         System.out.println(LOG_PREPEND + "Updating queue values...");
         String queueStatusOutput = this.fetch();
 

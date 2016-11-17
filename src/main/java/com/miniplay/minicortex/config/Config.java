@@ -34,6 +34,7 @@ public class Config {
     /* GENERAL */
     public boolean DEBUG = false;
     public boolean TESTQUEUEMODE = false;
+    public String SERVICE_NAME = "";
     public String WORKER_DRIVER = "";
     public ArrayList<String> ENABLED_OBSERVERS = new ArrayList<String>();
 
@@ -62,7 +63,6 @@ public class Config {
     public Boolean DOCKER_MACHINE_DRIVER_AMAZONEC2_PRIVATE_ADDRESS_ONLY = true;
 
     /* BASIC DOCKER CONTAINERS */
-    public String DOCKER_SERVICE_NAME = "";
     public String DOCKER_IMAGE = "";
     public String DOCKER_BASENAME = "";
     public ArrayList<String> DOCKER_VOLUMES = new ArrayList<String>();

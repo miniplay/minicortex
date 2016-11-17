@@ -1,24 +1,17 @@
 package com.miniplay.minicortex.modules.worker.drivers.docker;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.miniplay.common.CommandExecutor;
 import com.miniplay.common.Debugger;
 import com.miniplay.common.Stats;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
-import com.miniplay.minicortex.exceptions.InvalidProvisionParams;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.modules.worker.drivers.AbstractWorkerDriver;
-import com.miniplay.minicortex.modules.worker.drivers.dockermachine.ProvisionThread;
 import com.miniplay.minicortex.modules.worker.exceptions.DriverException;
 import com.spotify.docker.client.*;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.*;
-import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
-import com.sun.org.apache.xml.internal.security.encryption.ReferenceList;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -38,15 +31,14 @@ public class DockerDriver extends AbstractWorkerDriver {
     public volatile ConcurrentHashMap<String, Worker> workers = new ConcurrentHashMap<String, Worker>();
 
     private Config config = null;
-    private ArrayList<String> dockerEnvironmentVars;
     private String dockerEnvironment = null;
     private String dockerServiceName = null;
 
     /**
-     * DockerMachineDriver constructor
+     * DockerDriver constructor
      * @param elasticBalancer ElasticBalancer
      */
-    public DockerDriver(ElasticBalancer elasticBalancer) {
+    public DockerDriver(ElasticBalancer elasticBalancer) throws DriverException {
         super(elasticBalancer);
         this.elasticBalancer = elasticBalancer;
 
@@ -59,7 +51,9 @@ public class DockerDriver extends AbstractWorkerDriver {
             if(config.DOCKER_CONNECTION.get("HOST") == null) {
                 throw new DriverException("Docker connection host not defined");
             }
-            if(config.DOCKER_CONNECTION.get("HOST") != null && config.DOCKER_CONNECTION.get("HOST").contains("https://") && config.DOCKER_CONNECTION.get("CERTS_DIR") == null) {
+            if(config.DOCKER_CONNECTION.get("HOST") != null &&
+                    config.DOCKER_CONNECTION.get("HOST").contains("https://") &&
+                    config.DOCKER_CONNECTION.get("CERTS_DIR") == null) {
                 throw new DriverException("Docker connection host defined but it's certs dir NOT");
             }
             if(config.DOCKER_CONNECTION.get("HOST").contains("unix:///")) { // Use the unix socket way when available
@@ -71,12 +65,19 @@ public class DockerDriver extends AbstractWorkerDriver {
                         .build();
             }
 
+            Debugger.getInstance().print("DockerDriver Loaded OK",this.getClass());
+
         } catch(Exception e) {
             System.out.println("Docker client instance exception: " + e.getMessage());
+            throw new DriverException("Docker Client could not initialize. Exiting.");
         }
-
-        Debugger.getInstance().print("DockerDriver Loaded OK",this.getClass());
     }
+
+
+    /**
+     * LOADING ---------------------------------------------------------------------------------------------------------
+     */
+
 
     /**
      * Load conf into obj
@@ -89,18 +90,9 @@ public class DockerDriver extends AbstractWorkerDriver {
         this.setMaxBootsInLoop(config.DOCKER_MAX_BOOTS_IN_LOOP);
         this.setMaxShutdownsInLoop(config.DOCKER_MAX_SHUTDOWNS_IN_LOOP);
         this.setDockerEnvironment(config.DOCKER_ENV_VARS);
-        this.setDockerServiceName(config.DOCKER_SERVICE_NAME);
+        this.setDockerServiceName(config.SERVICE_NAME);
 
         this.isLoaded = true;
-    }
-
-    /**
-     * Get registered worker by worker name
-     * @param name String
-     * @return Worker
-     */
-    public Worker getWorker(String name) {
-        return this.workers.get(name);
     }
 
     /**
@@ -109,16 +101,40 @@ public class DockerDriver extends AbstractWorkerDriver {
     public void loadWorkers() {
         try {
 
-            // @TODO: Load workers
+            // Load workers filtering by service name
             List<Container> currentContainers = dockerClient.listContainers(
                     DockerClient.ListContainersParam.allContainers(),
                     DockerClient.ListContainersParam.withLabel("environment", this.dockerEnvironment),
                     DockerClient.ListContainersParam.withLabel("service", this.dockerServiceName));
 
-            Debugger.getInstance().print("Loaded " + currentContainers.size() + " containers matching ENV [" + this.dockerEnvironment + "] and Service [" + this.dockerServiceName,this.getClass());
+            Debugger.getInstance().print(
+                    "Loaded " + currentContainers.size() +
+                    " containers matching ENV [" + this.dockerEnvironment + "] and Service [" +
+                    this.dockerServiceName + "]",this.getClass());
 
             for (Container container: currentContainers) {
-                // @TODO this.registerWorker(container.id(),container.id(),container.image(),container.ports(),)
+
+                // Inspect container to get it's info
+                ContainerInfo containerInfo = dockerClient.inspectContainer(container.id());
+
+                String containerId = container.id();
+                String containerName = container.names().get(0);
+                containerName = containerName.startsWith("/") ? containerName.substring(1) : containerName;
+                String containerImage = container.image();
+                List<Container.PortMapping> containerBindPorts = container.ports();
+                List<String> containerEnvVars = containerInfo.config().env();
+                List<ContainerMount> containerMountedVolumes = container.mounts();
+                ContainerState containerState = containerInfo.state();
+
+                this.registerWorker(
+                        containerId,
+                        containerName,
+                        containerImage,
+                        containerBindPorts,
+                        containerEnvVars,
+                        containerMountedVolumes,
+                        containerState
+                );
             }
 
 
@@ -126,31 +142,35 @@ public class DockerDriver extends AbstractWorkerDriver {
 
 
         } catch (Exception e) {
-            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "EXCEPTION: " + e.getMessage());
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Load Workers Exception: " + e.getMessage());
             e.printStackTrace();
         }
 
 
     }
 
-    /**
-     * Registers a new worker into the application
-     * @return Boolean
-     */
-    public Boolean registerWorker(String id, String name, String image, ArrayList<String> bindPorts, ArrayList<String> envVars, ArrayList<String> mountedVolumes, ContainerState state) {
-        try {
-            Worker worker = new Worker(this, id, this.dockerClient, name, image, bindPorts, envVars, mountedVolumes, state);
-            Boolean workerExists = this.workers.get(name) != null;
-            if(workerExists) {
-                this.workers.replace(name, worker);
-            } else {
-                this.workers.put(name, worker);
-            }
 
-            return true;
-        } catch (Exception e) {
-            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + e.getMessage());
-            return false;
+    /**
+     * PROVISION & REGISTER --------------------------------------------------------------------------------------------
+     */
+
+
+
+    public void provisionWorkers(Integer workersToProvision) {
+        for(int i = 1; i<=workersToProvision; i++) {
+            Debugger.getInstance().printOutput("Provisioning worker "+i+"/"+workersToProvision);
+
+            // Generate secure random string
+            SecureRandom random = new SecureRandom();
+            String randomString =  new BigInteger(130, random).toString(32);
+
+            // Provision worker with random name
+            String workerName = ConfigManager.getConfig().DOCKER_BASENAME + randomString.substring(2,7);
+
+            // @TODO: Check if the workerName already exists (already done in registerWorker but just in case)
+
+            provisionWorker(workerName);
+
         }
     }
 
@@ -162,15 +182,21 @@ public class DockerDriver extends AbstractWorkerDriver {
         try {
             Debugger.getInstance().printOutput("Provisioning new worker #"+workerName);
 
-            //Provision new worker (docker container run?)
+            //Provision new worker
 
-
+            // Generate configBuilder
             final HostConfig.Builder hostConfigBuilder = HostConfig.builder();
 
-            // Set exposed ports @TODO
-//            for (String volume:this.getConfig().DOCKER_PORTS) {
-//                hostConfigBuilder.portb(volume);
-//            }
+            // Set exposed ports
+            final Map<String, List<PortBinding>> portBindings = new HashMap<String, List<PortBinding>>();
+            for (String port:this.getConfig().DOCKER_PORTS) {
+                String[] splittedPort = port.split(":");
+                if(splittedPort[0] != null && splittedPort[1] != null) {
+                    portBindings.put(splittedPort[0], Arrays.asList( PortBinding.of( "", splittedPort[1] )));
+                }
+
+            }
+            hostConfigBuilder.portBindings(portBindings);
 
 
             // Set volumes
@@ -178,7 +204,7 @@ public class DockerDriver extends AbstractWorkerDriver {
                 hostConfigBuilder.appendBinds(volume);
             }
 
-
+            // set builder properties, including the hostconfig build
             ContainerConfig.Builder containerBuilder = ContainerConfig.builder()
                 .image(this.getConfig().DOCKER_IMAGE)
                 .env(config.DOCKER_ENV_VARS)
@@ -186,12 +212,24 @@ public class DockerDriver extends AbstractWorkerDriver {
                 .hostConfig(hostConfigBuilder.build())
                 .hostname(workerName);
 
-
+            // create the container
             final ContainerCreation container = this.dockerClient.createContainer(containerBuilder.build(),workerName);
 
+            // get created container information
             ContainerInfo containerInfo = dockerClient.inspectContainer(container.id());
 
-            this.registerWorker(containerInfo.id(), workerName, this.getConfig().DOCKER_IMAGE, this.getConfig().DOCKER_PORTS, this.getConfig().DOCKER_ENV_VARS, this.getConfig().DOCKER_VOLUMES, containerInfo.state());
+            // @TODO: Register worker with proper PortMappings
+            List<Container.PortMapping> portMappings = new ArrayList<Container.PortMapping>();
+
+
+            this.registerWorker(
+                    containerInfo.id(),
+                    workerName,
+                    containerInfo.image(),
+                    portMappings,
+                    containerInfo.config().env(),
+                    containerInfo.mounts(),
+                    containerInfo.state());
 
 
             Debugger.getInstance().debug("Worker provisioned! - id -> "+containerInfo.id(), this.getClass());
@@ -207,6 +245,80 @@ public class DockerDriver extends AbstractWorkerDriver {
         }
 
     }
+
+    /**
+     * Registers a new worker into the application
+     * @return Boolean
+     */
+    public Boolean registerWorker(String id, String name, String image, List<Container.PortMapping> bindPorts, List<String> envVars, List<ContainerMount> mountedVolumes, ContainerState state) {
+        try {
+            Worker worker = new Worker(this, id, this.dockerClient, name, image, bindPorts, envVars, mountedVolumes, state);
+            Boolean workerExists = this.workers.get(name) != null;
+            if(workerExists) {
+                this.workers.replace(name, worker);
+            } else {
+                this.workers.put(name, worker);
+            }
+
+            return true;
+        } catch (Exception e) {
+            System.out.println(Debugger.PREPEND_OUTPUT_DOCKER + "Register Workers Exception: " + e.getMessage());
+            return false;
+        }
+    }
+
+
+    /**
+     * ACTIONS ---------------------------------------------------------------------------------------------------------
+     */
+
+
+    public void killWorkers(Integer workersToKill) {
+        for(int i = 1; i<=workersToKill; i++) {
+            Debugger.getInstance().printOutput("Killing worker "+i+"/"+workersToKill);
+            this.killRandomWorker();
+
+        }
+    }
+
+    public void startWorkers(Integer workersToStart) {
+        for(int i = 1; i<=workersToStart; i++) {
+            Debugger.getInstance().printOutput("Starting worker "+i+"/"+workersToStart);
+            this.startRandomWorker();
+
+        }
+    }
+
+    private void killRandomWorker() {
+        Worker workerToKill = this.getRandomWorker(Worker.STATUS_RUNNING);
+        if(workerToKill != null) {
+            workerToKill.kill();
+        } else {
+            Debugger.getInstance().print("Didn't found any running container to kill.", this.getClass());
+        }
+    }
+
+    private void startRandomWorker() {
+        Worker workerToStart;
+        workerToStart = this.getRandomWorker(Worker.STATUS_EXITED);
+        if(workerToStart == null) {
+            // Sometimes we don't have EXITED containers, i.e. first run, and we need to use recently created containers
+            workerToStart = this.getRandomWorker(Worker.STATUS_CREATED);
+        }
+
+        if(workerToStart != null) {
+            workerToStart.start();
+        } else {
+            Debugger.getInstance().print("Didn't found any Exited or Created container to start.", this.getClass());
+        }
+    }
+
+
+    /**
+     * GETTERS ---------------------------------------------------------------------------------------------------------
+     */
+
+
 
     /**
      * Get stopped workers (exited)
@@ -264,54 +376,6 @@ public class DockerDriver extends AbstractWorkerDriver {
         return matchWorkers;
     }
 
-    public void provisionWorkers(Integer workersToProvision) {
-        for(int i = 1; i<=workersToProvision; i++) {
-            Debugger.getInstance().printOutput("Provisioning worker "+i+"/"+workersToProvision);
-
-            // Generate secure random string
-            SecureRandom random = new SecureRandom();
-            String randomString =  new BigInteger(130, random).toString(32);
-
-            // Provision worker with random name
-            String workerName = ConfigManager.getConfig().DOCKER_BASENAME + randomString.substring(2,7);
-
-            // @TODO: Check if the workerName already exists
-
-            provisionWorker(workerName);
-
-        }
-    }
-
-    public void killWorkers(Integer workersToKill) {
-        for(int i = 1; i<=workersToKill; i++) {
-            Debugger.getInstance().printOutput("Killing worker "+i+"/"+workersToKill);
-            this.killRandomWorker();
-
-        }
-    }
-
-    public void startWorkers(Integer workersToStart) {
-        for(int i = 1; i<=workersToStart; i++) {
-            Debugger.getInstance().printOutput("Starting worker "+i+"/"+workersToStart);
-            this.startRandomWorker();
-
-        }
-    }
-
-    private void killRandomWorker() {
-        Worker workerToKill = this.getRandomWorker(Worker.STATUS_RUNNING);
-        workerToKill.kill();
-    }
-
-    private void startRandomWorker() {
-        Worker workerToStart = null;
-        workerToStart = this.getRandomWorker(Worker.STATUS_EXITED);
-        if(workerToStart == null) { // Sometimes we don't have EXITED containers, i.e. first run, and we need to use recently created containers
-            workerToStart = this.getRandomWorker(Worker.STATUS_CREATED);
-        }
-        workerToStart.start();
-    }
-
     /**
      * Retrieve a random registered worker
      * @param state String
@@ -336,9 +400,28 @@ public class DockerDriver extends AbstractWorkerDriver {
         }
     }
 
+    /**
+     * @return Config
+     */
     public Config getConfig() {
         return config;
     }
+
+    /**
+     * Get registered worker by worker name
+     * @param name String
+     * @return Worker
+     */
+    public Worker getWorker(String name) {
+        return this.workers.get(name);
+    }
+
+
+
+    /**
+     * SETTERS ---------------------------------------------------------------------------------------------------------
+     */
+
 
     public void setDockerEnvironment(ArrayList<String> dockerEnvironment) throws DriverException {
 

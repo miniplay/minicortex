@@ -8,11 +8,14 @@ import com.miniplay.minicortex.modules.worker.drivers.AbstractWorker;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.messages.Container;
+import com.spotify.docker.client.messages.ContainerMount;
 import com.spotify.docker.client.messages.ContainerState;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class Worker extends AbstractWorker {
 
@@ -36,9 +39,9 @@ public class Worker extends AbstractWorker {
     protected String name = null;
     protected String image = null;
     protected String state = null;
-    protected ArrayList<String> bindPorts = null;
-    protected ArrayList<String> envVars;
-    protected ArrayList<String> mountedVolumes;
+    protected List<Container.PortMapping> bindPorts = null;
+    protected List<String> envVars;
+    protected List<ContainerMount> mountedVolumes;
 
     // Docker client to interact with the API
     private DockerClient dockerClient = null;
@@ -56,7 +59,7 @@ public class Worker extends AbstractWorker {
      * @param bindPorts String
      * @param state ContainerState
      */
-    public Worker(DockerDriver driverInstance, String id, DockerClient dockerClient, String name, String image, ArrayList<String> bindPorts, ArrayList<String> envVars, ArrayList<String> mountedVolumes, ContainerState state) {
+    public Worker(DockerDriver driverInstance, String id, DockerClient dockerClient, String name, String image, List<Container.PortMapping> bindPorts, List<String> envVars, List<ContainerMount> mountedVolumes, ContainerState state) {
         super(name,state.toString());
         this.id = id;
         this.driverInstance = driverInstance;
@@ -77,9 +80,9 @@ public class Worker extends AbstractWorker {
             this.setState(STATUS_EXITED);
         } else {
             this.setState(STATUS_CREATED);
-            Debugger.getInstance().print("Docker Worker state not recognized!! State:" + state.toString(),this.getClass());
+            Debugger.getInstance().print("Docker Worker state not recognized, setting CREATED as default state. Received state:"
+                    + state.toString(),this.getClass());
         }
-
 
         this.dockerClient = dockerClient;
 
@@ -88,7 +91,7 @@ public class Worker extends AbstractWorker {
 
 
     /**
-     * Worker actions------------------------------------------------------------------------------------------------
+     * Worker actions---------------------------------------------------------------------------------------------------
      */
 
     public void start() {
@@ -97,6 +100,8 @@ public class Worker extends AbstractWorker {
         // Actually start the worker
         try {
             dockerClient.startContainer(this.getName());
+
+            Debugger.getInstance().print("Worker #" + this.getName() + " Started successfully",this.getClass());
 
             if(Stats.getInstance().isEnabled()) {
                 Stats.getInstance().get().increment("minicortex.elastic_balancer.workers.worker.start");
@@ -121,6 +126,8 @@ public class Worker extends AbstractWorker {
         try {
             dockerClient.killContainer(this.getName());
 
+            Debugger.getInstance().print("Worker #" + this.getName() + " Killed successfully",this.getClass());
+
             if(Stats.getInstance().isEnabled()) {
                 Stats.getInstance().get().increment("minicortex.elastic_balancer.workers.worker.hardkill");
             }
@@ -139,6 +146,8 @@ public class Worker extends AbstractWorker {
     public void remove() {
         try {
             this.dockerClient.removeContainer(this.getName());
+
+            Debugger.getInstance().print("Worker #" + this.getName() + " Removed successfully",this.getClass());
 
             if(Stats.getInstance().isEnabled()) {
                 Stats.getInstance().get().increment("minicortex.elastic_balancer.workers.worker.remove");
@@ -185,11 +194,13 @@ public class Worker extends AbstractWorker {
     }
 
     /**
-     * @return HashMap
+     * @return List<Container.PortMapping>
      */
-    public ArrayList<String> getBindPorts() {
+    public List<Container.PortMapping> getBindPorts() {
         return bindPorts;
     }
+
+
 
     /**
      * Setters ---------------------------------------------------------------------------------------------------------
@@ -225,9 +236,9 @@ public class Worker extends AbstractWorker {
 
 
     /**
-     * @param bindPorts ArrayList
+     * @param bindPorts List<Container.PortMapping>
      */
-    public void setBindPorts(ArrayList<String> bindPorts) {
+    public void setBindPorts(List<Container.PortMapping> bindPorts) {
         this.bindPorts = bindPorts;
     }
 }
