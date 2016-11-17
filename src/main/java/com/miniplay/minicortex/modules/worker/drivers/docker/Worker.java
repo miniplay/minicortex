@@ -43,6 +43,8 @@ public class Worker extends AbstractWorker {
     protected List<String> envVars;
     protected List<ContainerMount> mountedVolumes;
 
+    private static final int SECS_BEFORE_SIGKILL_CONTAINER = 30;
+
     // Docker client to interact with the API
     private DockerClient dockerClient = null;
 
@@ -124,7 +126,8 @@ public class Worker extends AbstractWorker {
 
         // Actually kill the worker
         try {
-            dockerClient.killContainer(this.getName());
+            //dockerClient.killContainer(this.getName());
+            dockerClient.stopContainer(this.getName(),SECS_BEFORE_SIGKILL_CONTAINER);
 
             Debugger.getInstance().print("Worker #" + this.getName() + " Killed successfully",this.getClass());
 
