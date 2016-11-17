@@ -153,7 +153,7 @@ public class ElasticBalancer {
      * Elastic balance workers based on the calculated balance score
      * @param balanceScore Integer
      */
-    private void elasticBalanceWorkers(Integer balanceScore) { // @ TODO: Have a look at this, some variables overlapped when refactoring!!
+    private void elasticBalanceWorkers(Integer balanceScore) {
         Config configInstance = ConfigManager.getConfig();
         Integer runningWorkersFromQueue = this.queue_workers.get();
         Integer runningWorkers = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
@@ -175,10 +175,16 @@ public class ElasticBalancer {
                 // Get containers scheduled kill
                 Integer workersScheduledKill = this.getWorkerManager().getWorkerDriver().workersScheduledStop.size();
                 Integer WorkersToKill = Math.abs(workerScore) - workersScheduledKill;
-                if(workersScheduledKill > 0) Debugger.getInstance().print("## INFO: Found "+workersScheduledKill+" containers scheduled kill, taking off from "+WorkersToKill+" containers to kill",this.getClass());
+                if(workersScheduledKill > 0) {
+                    Debugger.getInstance().print("## INFO: Found "+workersScheduledKill+" containers scheduled kill, taking off from "+WorkersToKill+" workers to kill",this.getClass());
+                } else {
+                    Debugger.getInstance().print("## INFO: "+runningWorkers+" running workers, "+workerScore+" workerScore, taking off from "+WorkersToKill+" workers to kill",this.getClass());
+                }
+
 
                 // CASE: Willing to remove more containers than the minimum set
-                if((runningWorkers - workerScore) < this.minWorkers) {
+                if((runningWorkers - workerScore) <= this.minWorkers) {
+                    Debugger.getInstance().print("## INFO: Workers to kill limit reached! Want to kill "+WorkersToKill+" and MIN workers is "+ this.minWorkers,this.getClass());
                     WorkersToKill = runningWorkers - this.minWorkers;
                 }
 
@@ -287,7 +293,7 @@ public class ElasticBalancer {
      * @param howMany integer
      */
     private void removeWorkers(int howMany) {
-        if (howMany == 0) {return;}
+        if (howMany <= 0) {return;}
         if (!this.canShutdownWorker()) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd 'at' hh:mm:ss");
             String date = sdf.format(this.lastBootTs*1000);
