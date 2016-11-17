@@ -122,7 +122,7 @@ public class Worker extends AbstractWorker {
      * Kill worker (stop)
      */
     public void kill() {
-        Debugger.getInstance().print("Worker #" + this.getName() + " is being killed",this.getClass());
+        Debugger.getInstance().print("Worker #" + this.getName() + " sending SIGTERM to kill it, after " + SECS_BEFORE_SIGKILL_CONTAINER + " seconds we'll send SIGKILL",this.getClass());
 
         // Actually kill the worker
         try {
