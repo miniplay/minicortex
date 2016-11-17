@@ -33,7 +33,7 @@ public class ElasticBalancer {
     private long lastBootTs = 0L;
 
     /* Workers status */
-    public AtomicInteger workers = new AtomicInteger();
+    public AtomicInteger queue_workers = new AtomicInteger();
     public AtomicInteger workers_queued_jobs = new AtomicInteger();
 
     /* Elastic balancer claonfig */
@@ -138,7 +138,7 @@ public class ElasticBalancer {
     private Integer calculateBalancerScore() {
         try {
             Integer workersQueuedJobs = this.workers_queued_jobs.get();
-            Integer runningWorkers = this.workers.get();
+            Integer runningWorkers = this.queue_workers.get();
             Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkers * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
             Debugger.getInstance().debug("CALCULATED SCORE: " + balanceScore,this.getClass());
             Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.score",balanceScore);
@@ -155,7 +155,7 @@ public class ElasticBalancer {
      */
     private void elasticBalanceWorkers(Integer balanceScore) { // @ TODO: Have a look at this, some variables overlapped when refactoring!!
         Config configInstance = ConfigManager.getConfig();
-        Integer runningWorkersFromQueue = this.workers.get();
+        Integer runningWorkersFromQueue = this.queue_workers.get();
         Integer runningWorkers = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
         Integer workerScore = minWorkers; // Equaling to minimum
 
@@ -235,34 +235,34 @@ public class ElasticBalancer {
 
     private boolean checkMinimumBalanceRequirements() {
         boolean result = true;
-        Integer runningWorkers = this.workers.get();
+        Integer runningQueueWorkers = this.queue_workers.get();
 
         /**
          * CASE : Workers present does NOT meet the MIN value
          */
-        if (runningWorkers < this.minWorkers) {
-            int containersNeeded = (this.minWorkers - runningWorkers);
+        if (runningQueueWorkers < this.minWorkers) {
+            int containersNeeded = (this.minWorkers - runningQueueWorkers);
             int howManyToBoot = 1;
             if (containersNeeded >= this.maxBootsInLoop) {
                 howManyToBoot = this.maxBootsInLoop;
             } else {
                 howManyToBoot = containersNeeded;
             }
-            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are below minimum value (" + this.minWorkers + "), Booting up "+howManyToBoot+ " container",this.getClass());
+            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningQueueWorkers + ") are below minimum value (" + this.minWorkers + "), Booting up "+howManyToBoot+ " container",this.getClass());
             this.addWorkers(howManyToBoot);
             result = false;
         /**
          * CASE : MORE CONTAINERS THAN MAX VALUE
          */
-        } else if (runningWorkers > this.maxWorkers) {
-            int containersNotNeeded = (runningWorkers - this.maxWorkers);
+        } else if (runningQueueWorkers > this.maxWorkers) {
+            int containersNotNeeded = (runningQueueWorkers - this.maxWorkers);
             int howManyToRemove = 1;
             if (containersNotNeeded >= this.maxShutdownsInLoop) {
                 howManyToRemove = this.maxShutdownsInLoop;
             } else {
                 howManyToRemove = containersNotNeeded;
             }
-            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are above maximum value (" + this.maxWorkers + "), Removing "+howManyToRemove+" container",this.getClass());
+            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningQueueWorkers + ") are above maximum value (" + this.maxWorkers + "), Removing "+howManyToRemove+" container",this.getClass());
             this.removeWorkers(howManyToRemove);
             result = false;
         }
@@ -276,10 +276,10 @@ public class ElasticBalancer {
      */
     private void addWorkers(int howMany) {
         if (howMany == 0) {return;}
-        Debugger.getInstance().debug("Booting " + howMany + " container..",this.getClass());
+        Debugger.getInstance().debug("Booting " + howMany + " worker..",this.getClass());
         this.getWorkerManager().getWorkerDriver().startWorkers(howMany);
         this.refreshShutdownLockTs();
-        Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.started",howMany);
+        Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.workers.started",howMany);
     }
 
     /**
@@ -291,12 +291,12 @@ public class ElasticBalancer {
         if (!this.canShutdownWorker()) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd 'at' hh:mm:ss");
             String date = sdf.format(this.lastBootTs*1000);
-            Debugger.getInstance().debug("#INFO: Workers can't be removed yet due to  " + this.minsShutdownLocked + " mins lock after last container boot @ "+date,this.getClass());
+            Debugger.getInstance().debug("#INFO: Workers can't be removed yet due to  " + this.minsShutdownLocked + " mins lock after last worker boot @ "+date,this.getClass());
             return;
         }
         Debugger.getInstance().debug("Removing " + howMany + " container..",this.getClass());
         this.getWorkerManager().getWorkerDriver().killWorkers(howMany);
-        Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.containers.killed",howMany);
+        Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.workers.killed",howMany);
     }
 
     private boolean canShutdownWorker() {

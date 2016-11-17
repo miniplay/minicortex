@@ -2,11 +2,8 @@ package com.miniplay.custom.observers;
 import com.google.gson.Gson;
 import com.miniplay.common.Stats;
 import com.miniplay.custom.ObserverHelpers.Queue.StatusMessage;
-import com.miniplay.minicortex.config.Config;
-import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.balancer.ElasticBalancer;
 import com.miniplay.minicortex.observers.AbstractObserver;
-import com.miniplay.minicortex.server.CortexServer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,19 +29,19 @@ public class QueueObserver extends AbstractObserver {
         if(queueStatusOutput != null) { // Only if the queue status fetch returned true
             StatusMessage statusMessage = gson.fromJson(queueStatusOutput, StatusMessage.class);
 
-            ElasticBalancer.getInstance().workers.set(statusMessage.workers);
+            ElasticBalancer.getInstance().queue_workers.set(statusMessage.workers);
             ElasticBalancer.getInstance().workers_queued_jobs.set(statusMessage.workers_queued_jobs);
 
         }
 
         System.out.println(LOG_PREPEND + "\t"
-                + ElasticBalancer.getInstance().workers + " [WORKERS] \t"
+                + ElasticBalancer.getInstance().queue_workers + " [WORKERS] \t"
                 + ElasticBalancer.getInstance().workers_queued_jobs + " [WORKER_QUEUED_JOBS] \t"
         );
 
         if(Stats.getInstance().isEnabled()) {
             Stats.getInstance().get().increment("minicortex.observers.queue.executions");
-            Stats.getInstance().get().gauge("minicortex.observers.queue.workers", ElasticBalancer.getInstance().workers.get());
+            Stats.getInstance().get().gauge("minicortex.observers.queue.workers", ElasticBalancer.getInstance().queue_workers.get());
             Stats.getInstance().get().gauge("minicortex.observers.queue.workers_queued_jobs", ElasticBalancer.getInstance().workers_queued_jobs.get());
         }
     }
