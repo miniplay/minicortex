@@ -43,7 +43,7 @@ public class Worker extends AbstractWorker {
     protected List<String> envVars;
     protected List<ContainerMount> mountedVolumes;
 
-    private static final int SECS_BEFORE_SIGKILL_CONTAINER = 30;
+    private static final int SECS_BEFORE_SIGKILL_CONTAINER = 3600;
 
     // Docker client to interact with the API
     private DockerClient dockerClient = null;

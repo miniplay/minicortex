@@ -138,8 +138,24 @@ public class ElasticBalancer {
     private Integer calculateBalancerScore() {
         try {
             Integer workersQueuedJobs = this.workers_queued_jobs.get();
-            Integer runningWorkers = this.queue_workers.get();
-            Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkers * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
+            Integer runningWorkersFromQueue = this.queue_workers.get();
+            Integer runningWorkersFromDriver = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
+            Integer runningWorkers = runningWorkersFromQueue;
+
+            // Never use runningWorkersFromQueue if there is more runningWorkersFromQueue than actual workers running.
+            // This implies there has been some sort of problem with the Queue Status read. Maybe some worker froze or something.
+
+            if(runningWorkersFromQueue.intValue() != runningWorkersFromDriver.intValue()) {
+                Debugger.getInstance().print("Queue Workers & Workers doesn't match [ "+runningWorkersFromQueue+" Workers From Queue vs "+runningWorkersFromDriver+" Workers ]",this.getClass());
+                if(runningWorkersFromQueue > runningWorkersFromDriver) {
+                    Debugger.getInstance().print("Workers received Queue is bigger than real Workers. Using real workers to calculate the balance score",this.getClass());
+                    runningWorkers = runningWorkersFromDriver;
+                }
+            }
+
+            // Score calculation
+            Integer balanceScore = Math.round((workersQueuedJobs - ( runningWorkersFromQueue * this.EB_TOLERANCE_THRESHOLD)) / (this.EB_TOLERANCE_THRESHOLD));
+
             Debugger.getInstance().debug("CALCULATED SCORE: " + balanceScore,this.getClass());
             Stats.getInstance().get().gauge("minicortex.elastic_balancer.balance.score",balanceScore);
             return balanceScore;
@@ -155,13 +171,8 @@ public class ElasticBalancer {
      */
     private void elasticBalanceWorkers(Integer balanceScore) {
         Config configInstance = ConfigManager.getConfig();
-        Integer runningWorkersFromQueue = this.queue_workers.get();
         Integer runningWorkers = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
         Integer workerScore = minWorkers; // Equaling to minimum
-
-        if(runningWorkersFromQueue.intValue() != runningWorkers.intValue()) {
-            Debugger.getInstance().print("Queue Workers & Workers doesn't match [ "+runningWorkersFromQueue+" Workers From Queue vs "+runningWorkers+" Workers ]",this.getClass());
-        }
 
         if (!this.checkMinimumBalanceRequirements()) {return;}
 
