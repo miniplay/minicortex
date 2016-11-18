@@ -78,7 +78,7 @@ public class Worker extends AbstractWorker {
             this.setState(STATUS_PAUSED);
         } else if(state.restarting()) {
             this.setState(STATUS_RESTARTING);
-        } else if(state.exitCode() == 2) {
+        } else if(state.exitCode() == 2 || state.exitCode() == 0 || state.exitCode() == 137) {
             this.setState(STATUS_EXITED);
         } else {
             this.setState(STATUS_CREATED);
