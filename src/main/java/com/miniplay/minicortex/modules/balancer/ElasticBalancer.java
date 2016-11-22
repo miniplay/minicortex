@@ -5,6 +5,7 @@ import com.miniplay.common.Stats;
 import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.miniplay.minicortex.modules.worker.WorkerManager;
+import com.sun.org.apache.bcel.internal.classfile.ExceptionTable;
 
 import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
@@ -251,43 +252,50 @@ public class ElasticBalancer {
     }
 
     private boolean checkMinimumBalanceRequirements() {
+
         boolean result = true;
-        Integer runningWorkersFromQueue = this.queue_workers.get();
-        Integer runningWorkersFromDriver = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
-        Integer runningWorkers = runningWorkersFromQueue;
+
+        try {
+            Integer runningWorkersFromQueue = this.queue_workers.get();
+            Integer runningWorkersFromDriver = this.getWorkerManager().getWorkerDriver().getRunningWorkers().size();
+            Integer runningWorkers = runningWorkersFromQueue;
 
 
-        if(runningWorkersFromQueue > runningWorkersFromDriver) {
-            runningWorkers = runningWorkersFromDriver;
-        }
-
-        /**
-         * CASE : Workers present does NOT meet the MIN value
-         */
-        if (runningWorkers < this.minWorkers) {
-            int containersNeeded = (this.minWorkers - runningWorkers);
-            int howManyToBoot = 1;
-            if (containersNeeded >= this.maxBootsInLoop) {
-                howManyToBoot = this.maxBootsInLoop;
-            } else {
-                howManyToBoot = containersNeeded;
+            if(runningWorkersFromQueue > runningWorkersFromDriver) {
+                runningWorkers = runningWorkersFromDriver;
             }
-            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are below minimum value (" + this.minWorkers + "), Booting up "+howManyToBoot+ " container",this.getClass());
-            this.addWorkers(howManyToBoot);
-            result = false;
-        /**
-         * CASE : MORE CONTAINERS THAN MAX VALUE
-         */
-        } else if (runningWorkers > this.maxWorkers) {
-            int containersNotNeeded = (runningWorkers - this.maxWorkers);
-            int howManyToRemove = 1;
-            if (containersNotNeeded >= this.maxShutdownsInLoop) {
-                howManyToRemove = this.maxShutdownsInLoop;
-            } else {
-                howManyToRemove = containersNotNeeded;
+
+            /**
+             * CASE : Workers present does NOT meet the MIN value
+             */
+            if (runningWorkers < this.minWorkers) {
+                int containersNeeded = (this.minWorkers - runningWorkers);
+                int howManyToBoot = 1;
+                if (containersNeeded >= this.maxBootsInLoop) {
+                    howManyToBoot = this.maxBootsInLoop;
+                } else {
+                    howManyToBoot = containersNeeded;
+                }
+                Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are below minimum value (" + this.minWorkers + "), Booting up "+howManyToBoot+ " container",this.getClass());
+                this.addWorkers(howManyToBoot);
+                result = false;
+                /**
+                 * CASE : MORE CONTAINERS THAN MAX VALUE
+                 */
+            } else if (runningWorkers > this.maxWorkers) {
+                int containersNotNeeded = (runningWorkers - this.maxWorkers);
+                int howManyToRemove = 1;
+                if (containersNotNeeded >= this.maxShutdownsInLoop) {
+                    howManyToRemove = this.maxShutdownsInLoop;
+                } else {
+                    howManyToRemove = containersNotNeeded;
+                }
+                Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are above maximum value (" + this.maxWorkers + "), Removing "+howManyToRemove+" container",this.getClass());
+                this.removeWorkers(howManyToRemove);
+                result = false;
             }
-            Debugger.getInstance().debug("BALANCING REQUIREMENTS NOT MET: Workers present (" + runningWorkers + ") are above maximum value (" + this.maxWorkers + "), Removing "+howManyToRemove+" container",this.getClass());
-            this.removeWorkers(howManyToRemove);
+        } catch(Exception e) {
+            Debugger.getInstance().print("checkMinimumBalanceRequirements() Exception!! Message: " + e.getMessage(),this.getClass());
             result = false;
         }
 
@@ -336,14 +344,18 @@ public class ElasticBalancer {
      * Recalculate containers needed for CortexServer at this moment
      */
     private void balance() {
-        Integer registeredWorkers = this.getWorkerManager().getWorkerDriver().getAllWorkers().size();
-        Integer minWorkers = getWorkerManager().getWorkerDriver().getMinWorkers();
-        if(registeredWorkers < minWorkers) {
-            Debugger.getInstance().printOutput("Registered containers ("+registeredWorkers+") don't reach the minimum ("+minWorkers+"), ElasticBalance PAUSED!");
-        } else {
-            Debugger.getInstance().print("Calculating balancer score...",this.getClass());
-            Integer balanceScore = calculateBalancerScore();
-            elasticBalanceWorkers(balanceScore);
+        try {
+            Integer registeredWorkers = this.getWorkerManager().getWorkerDriver().getAllWorkers().size();
+            Integer minWorkers = getWorkerManager().getWorkerDriver().getMinWorkers();
+            if(registeredWorkers < minWorkers) {
+                Debugger.getInstance().printOutput("Registered containers ("+registeredWorkers+") don't reach the minimum ("+minWorkers+"), ElasticBalance PAUSED!");
+            } else {
+                Debugger.getInstance().print("Calculating balancer score...",this.getClass());
+                Integer balanceScore = calculateBalancerScore();
+                elasticBalanceWorkers(balanceScore);
+            }
+        } catch(Exception e) {
+            Debugger.getInstance().print("balance() Exception!! Message: " + e.getMessage(),this.getClass());
         }
     }
 
