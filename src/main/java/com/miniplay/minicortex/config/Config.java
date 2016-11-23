@@ -84,6 +84,7 @@ public class Config {
 
     /* STATSD */
     public String STATSD_HOST = "";
+    public String STATSD_PREFIX = "";
     public Integer STATSD_PORT = 8125;
 
 

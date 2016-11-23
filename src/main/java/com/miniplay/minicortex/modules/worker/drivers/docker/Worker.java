@@ -43,7 +43,7 @@ public class Worker extends AbstractWorker {
     protected List<String> envVars;
     protected List<ContainerMount> mountedVolumes;
 
-    private static final int SECS_BEFORE_SIGKILL_CONTAINER = 3600;
+    private static final int SECS_BEFORE_SIGKILL_CONTAINER = 7200; /* Give worker 2 hours to end pending jobs some workers have long running jobs and we don'y want to SIGKILL them */
 
     // Docker client to interact with the API
     private DockerClient dockerClient = null;
@@ -78,7 +78,7 @@ public class Worker extends AbstractWorker {
             this.setState(STATUS_PAUSED);
         } else if(state.restarting()) {
             this.setState(STATUS_RESTARTING);
-        } else if(state.exitCode() == 2 || state.exitCode() == 0 || state.exitCode() == 137 || state.exitCode() == 255) {
+        } else if(state.exitCode()>=0) {
             this.setState(STATUS_EXITED);
         } else {
             this.setState(STATUS_CREATED);

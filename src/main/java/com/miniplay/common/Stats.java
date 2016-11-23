@@ -1,5 +1,6 @@
 package com.miniplay.common;
 
+import com.miniplay.minicortex.config.Config;
 import com.miniplay.minicortex.config.ConfigManager;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 
@@ -19,7 +20,7 @@ public class Stats {
 
     public Stats() {
         if(ConfigManager.getConfig().STATSD_HOST != null && ConfigManager.getConfig().STATSD_HOST != null) {
-            statsdClient = new NonBlockingStatsDClient("minicortex_"+ConfigManager.getConfig().SERVICE_NAME, ConfigManager.getConfig().STATSD_HOST, ConfigManager.getConfig().STATSD_PORT);
+            statsdClient = new NonBlockingStatsDClient("minicortex_"+ConfigManager.getConfig().STATSD_PREFIX, ConfigManager.getConfig().STATSD_HOST, ConfigManager.getConfig().STATSD_PORT);
         } else {
             statsdClient = null;
         }
